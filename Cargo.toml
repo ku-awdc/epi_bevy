@@ -1,0 +1,12 @@
+[package]
+name = "epi_bevy"
+version = "0.1.0"
+authors = ["Mossa <cgmossa@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+derive_more = "0.99.13"
+itertools = "0.10.0"
+readonly = "0.2.0"

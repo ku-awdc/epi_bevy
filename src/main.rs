@@ -6,7 +6,8 @@
 //!
 #![feature(or_patterns)]
 
-use bevy::{app::AppExit, prelude::*};
+use bevy::{app::AppExit, core::FixedTimestep, prelude::*};
+
 use disease_compartment::{update_disease_compartments, DiseaseCompartment};
 
 #[derive(Debug)]
@@ -47,9 +48,8 @@ fn main() {
             herd_sizes: vec![140, 90],
             max_timesteps: usize::MAX,
             infection_rate: 0.03,
-            recovery_rate: 0.01,
+            recovery_rate: 0.001,
         })
-        // .add_startup_stage(Seed::Population, stage)
         .add_startup_stage(Seed::Population, SystemStage::parallel())
         .add_startup_stage_after(Seed::Population, Seed::Infection, SystemStage::parallel())
         .add_startup_system_to_stage(Seed::Population, seed_population.system())
@@ -61,13 +61,33 @@ fn main() {
         )
         // TODO: add recorder
         // print state changes when they happen
-        .add_system(log_changes_in_infected.system())
+        // .add_system(log_changes_in_infected.system())
+        .add_system(
+            log_every_half_second
+                .system()
+                .with_run_criteria(FixedTimestep::step(0.5)),
+        )
         // TODO: add application loop that displays the current estimates
         // TODO: stop if no-one is infected
         .add_system(terminate_if_outbreak_is_over.system())
         .run();
 
     println!("Finished simulation.");
+}
+
+/// Print disease states if infected state every half a second;
+fn log_every_half_second(
+    query: Query<(
+        &disease_compartment::Susceptible,
+        &disease_compartment::Infected,
+        &disease_compartment::Recovered,
+    )>,
+) {
+    for (susceptible, infected, recovered) in query.iter() {
+        // dbg!(state);
+        // println!("{:#.3?}", state);
+        println!("{:>9.3}, {:>9.3}, {:>9.3}", susceptible.0, infected.0, recovered.0);
+    }
 }
 
 /// Print disease states if infected state has changed.
@@ -81,10 +101,10 @@ fn log_changes_in_infected(
         Changed<disease_compartment::Infected>,
     >,
 ) {
-    for (S, I, R) in query.iter() {
+    for (susceptible, infected, recovered) in query.iter() {
         // dbg!(state);
         // println!("{:#.3?}", state);
-        println!("{:>9.3}, {:>9.3}, {:>9.3}", S.0, I.0, R.0);
+        println!("{:>9.3}, {:>9.3}, {:>9.3}", susceptible.0, infected.0, recovered.0);
     }
 }
 
@@ -95,7 +115,9 @@ fn terminate_if_outbreak_is_over(
     mut event_writer: EventWriter<AppExit>,
     tick: Res<ScenarioTick>,
 ) {
-    let any_active_infection = query.iter().any(|x| approx::relative_ne!(x.0, 0.));
+    let any_active_infection = query
+        .iter()
+        .any(|x| approx::relative_ne!(x.0, 0., epsilon = 0.001));
     if
     //stop if there are no more active infections
     (!any_active_infection) ||
@@ -144,19 +166,19 @@ mod disease_compartment {
             recovery_rate,
             ..
         } = *scenario_configuration;
-        for (mut S, mut I, mut R) in query.iter_mut() {
-            let delta_infected = infection_rate * S.0 * I.0;
+        for (mut susceptible, mut infected, mut recovered) in query.iter_mut() {
+            let delta_infected = infection_rate * susceptible.0 * infected.0;
             // newly infected may only be atmost the number of susceptible animals
-            let delta_infected = delta_infected.min(S.0);
-            let delta_recovered = recovery_rate * I.0 as f64;
+            let delta_infected = delta_infected.min(susceptible.0);
+            let delta_recovered = recovery_rate * infected.0 as f64;
             // number of recovered may at most be the number of infected
-            let delta_recovered = delta_recovered.min(I.0);
+            let delta_recovered = delta_recovered.min(infected.0);
 
             // dbg!(delta_infected, delta_recovered);
 
-            S.0 += -delta_infected;
-            I.0 += delta_infected - delta_recovered;
-            R.0 += delta_recovered;
+            susceptible.0 += -delta_infected;
+            infected.0 += delta_infected - delta_recovered;
+            recovered.0 += delta_recovered;
         }
     }
 }

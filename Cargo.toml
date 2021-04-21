@@ -9,6 +9,9 @@ edition = "2018"
 [dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy.git", features = ["dynamic"], default-features = false }
 
+# numerical rust
+approx = "0.4.0"
+
 # enhance #rustlang 
 derive_more = "0.99.13"
 itertools = "0.10.0"

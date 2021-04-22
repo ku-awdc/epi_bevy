@@ -14,7 +14,13 @@ struct CattlePopulationRecord {
     adjacent_farms: Vec<Vec<FarmId>>,
 }
 
-#[cfg_attr(features = "serialize", derive(serde::Serialize, serde::Deserialize))]
+// #[cfg_attr(
+//     features = "serialize",
+//     derive(serde::Serialize, serde::Deserialize, serde::DeserializeOwned)
+// )]
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+// #[serde(deny_unknown_fields)]
 struct Record {
     farm_id: usize,
     herd_size: usize,
@@ -32,7 +38,7 @@ mod tests {
         let population_info_file = File::open("assets/population_info.json").unwrap();
         let population_info_reader = BufReader::with_capacity(100_000_000, population_info_file);
 
-
         let pop_record: Vec<Record> = serde_json::from_reader(population_info_reader).unwrap();
+        dbg!(pop_record);
     }
 }

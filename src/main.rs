@@ -25,7 +25,7 @@ pub struct ScenarioConfiguration {
 }
 
 /// Scenario ticks
-#[derive(Debug)]
+#[derive(Debug, derive_more::Display)]
 struct ScenarioTick(u64);
 
 impl ScenarioTick {
@@ -37,6 +37,7 @@ impl ScenarioTick {
     }
 }
 
+/// Update scenario ticks by one.
 fn update_scenario_tick(mut scenario_tick: ResMut<ScenarioTick>) {
     scenario_tick.update();
 }
@@ -60,7 +61,8 @@ fn main() {
         .insert_resource(ScenarioConfiguration {
             total_herds: 2,
             herd_sizes: vec![140, 90],
-            max_timesteps: u64::MAX,
+            // max_timesteps: usize::MAX(),
+            max_timesteps: 1_000_000,
             infection_rate: 0.03,
             recovery_rate: 0.001,
         })
@@ -100,11 +102,12 @@ fn log_every_half_second(
         &disease_compartment::Infected,
         &disease_compartment::Recovered,
     )>,
+    scenario_tick: Res<ScenarioTick>,
 ) {
     for (susceptible, infected, recovered) in query.iter() {
         println!(
-            "{:>9.3}, {:>9.3}, {:>9.3}",
-            susceptible.0, infected.0, recovered.0
+            "{} => {:>9.3}, {:>9.3}, {:>9.3}",
+            *scenario_tick, susceptible.0, infected.0, recovered.0
         );
     }
 }
@@ -120,11 +123,12 @@ fn log_changes_in_infected(
         // notice this query in comparison to [log_every_half_second]
         Changed<disease_compartment::Infected>,
     >,
+    scenario_tick: Res<ScenarioTick>,
 ) {
     for (susceptible, infected, recovered) in query.iter() {
         println!(
-            "{:>9.3}, {:>9.3}, {:>9.3}",
-            susceptible.0, infected.0, recovered.0
+            "{} => {:>9.3}, {:>9.3}, {:>9.3}",
+            scenario_tick.0, susceptible.0, infected.0, recovered.0
         );
     }
 }

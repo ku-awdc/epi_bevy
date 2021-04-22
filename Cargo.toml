@@ -7,7 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy.git", features = ["dynamic"], default-features = false }
+# bevy = { git = "https://github.com/bevyengine/bevy.git" }
+bevy = { git = "https://github.com/bevyengine/bevy.git", features = ["bevy_wgpu", "bevy_winit", "dynamic", "render"], default-features = false }
+# this only ended up not including `pbr`
+# bevy_internal = { git = "https://github.com/bevyengine/bevy.git", features = ["bevy_render", "bevy_ui", "bevy_text", "bevy_sprite"] }
 
 # numerical rust
 approx = "0.4.0"
@@ -22,4 +25,4 @@ serde = { version = "1", features = ["derive"], optional = true }
 
 [features]
 serialize = ["serde", "bevy/serialize"]
-
+# default = ["bevy_internal/bevy_text", "bevy_internal/bevy_ui"]

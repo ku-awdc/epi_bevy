@@ -55,7 +55,11 @@ enum Seed {
 
 fn main() {
     App::build()
-        .add_plugins(MinimalPlugins)
+        // .add_plugins(MinimalPlugins)
+        .add_plugins(DefaultPlugins)
+
+        .add_startup_system(setup.system())
+        
         .insert_resource(ScenarioTick(0))
         .add_system(update_scenario_tick.system())
         .insert_resource(ScenarioConfiguration {
@@ -92,6 +96,33 @@ fn main() {
         .run();
 
     println!("Finished simulation.");
+}
+
+
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    // 2d camera
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(UiCameraBundle::default());
+    
+    commands.spawn()
+        .insert_bundle(
+            TextSection
+        );
+    commands.spawn_bundle(Text2dBundle {
+        text: Text::with_section(
+            "This text is in the 2D scene.",
+            TextStyle {
+                font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                font_size: 13.0,
+                color: Color::BLACK,
+            },
+            TextAlignment {
+                vertical: VerticalAlign::Center,
+                horizontal: HorizontalAlign::Center,
+            },
+        ),
+        ..Default::default()
+    });
 }
 
 /// Print disease states if infected state every half a second;

@@ -7,7 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy.git", features = ["dynamic"], default-features = false }
+# bevy = { git = "https://github.com/bevyengine/bevy.git", features = ["dynamic"], default-features = false }
+bevy = { path = "../bevy/", features = ["dynamic"], default-features = false }
 
 # numerical rust
 approx = "0.4.0"
@@ -19,7 +20,8 @@ readonly = "0.2.0"
 
 # serialisation
 serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1.0.64", optional = true }
 
 [features]
-serialize = ["serde", "bevy/serialize"]
-
+default = ["serialize"]
+serialize = ["serde", "serde_json", "bevy/serialize"]

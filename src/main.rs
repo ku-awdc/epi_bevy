@@ -1,13 +1,17 @@
 //!
 //! - [x] Run headless
 //! - [x] Implement SIR model
+//! - [ ] Add repetitions/iterations to the model
+//! - [ ] Add recording through [sled]
 //! - [ ] Add UI that shows progress
 //! - [ ] Add CLI interface
 //!
-#![feature(or_patterns)]
 
 use bevy::{app::AppExit, core::FixedTimestep, prelude::*};
-use disease_compartment::{update_disease_compartments, DiseaseCompartment};
+mod sir_spread_model;
+use sir_spread_model::{update_disease_compartments, DiseaseCompartment};
+
+mod cattle_population;
 
 /// All the parameters for setting up a scenario-run.
 #[derive(Debug)]
@@ -18,6 +22,8 @@ pub struct ScenarioConfiguration {
     herd_sizes: Vec<usize>,
     /// Fail-safe for terminating the scenario.
     max_timesteps: u64,
+    /// Alias: Iterations.
+    max_repetitions: u64,
     /// Infection rate
     infection_rate: f64,
     /// Recovery rate
@@ -63,16 +69,14 @@ fn main() {
             herd_sizes: vec![140, 90],
             // max_timesteps: usize::MAX(),
             max_timesteps: 1_000_000,
+            max_repetitions: 2,
             infection_rate: 0.03,
             recovery_rate: 0.001,
         })
         .add_startup_stage(Seed::Population, SystemStage::parallel())
         .add_startup_stage_after(Seed::Population, Seed::Infection, SystemStage::parallel())
         .add_startup_system_to_stage(Seed::Population, seed_population.system())
-        .add_startup_system_to_stage(
-            Seed::Infection,
-            disease_compartment::seed_infection.system(),
-        )
+        .add_startup_system_to_stage(Seed::Infection, sir_spread_model::seed_infection.system())
         // TODO: add spread model
         .add_system_set(
             SystemSet::new().with_system(update_disease_compartments.system()), // .with_system(new_infections.system())
@@ -80,7 +84,7 @@ fn main() {
         )
         // TODO: add recorder
         // print state changes when they happen
-        // .add_system(log_changes_in_infected.system())
+        .add_system(log_changes_in_infected.system())
         // print the state of the systems every 500ms.
         .add_system(
             log_every_half_second
@@ -90,24 +94,35 @@ fn main() {
         // TODO: add application loop that displays the current estimates
         // TODO: stop if no-one is infected (or max timesteps has been reached)
         .add_system(terminate_if_outbreak_is_over.system())
+        // .insert_resource(ReportExecutionOrderAmbiguities) // requires [LogPlugin]
         .run();
 
     println!("Finished simulation.");
 }
 
+
+/// Add a susceptible population to the mix.
+fn seed_population(mut command: Commands, scenario_configuration: Res<ScenarioConfiguration>) {
+    for herd_size in &scenario_configuration.herd_sizes {
+        command
+            .spawn()
+            .insert_bundle(DiseaseCompartment::new(*herd_size));
+    }
+}
+
 /// Print disease states if infected state every half a second;
 fn log_every_half_second(
     query: Query<(
-        &disease_compartment::Susceptible,
-        &disease_compartment::Infected,
-        &disease_compartment::Recovered,
+        &sir_spread_model::Susceptible,
+        &sir_spread_model::Infected,
+        &sir_spread_model::Recovered,
     )>,
     scenario_tick: Res<ScenarioTick>,
 ) {
     for (susceptible, infected, recovered) in query.iter() {
         println!(
             "{} => {:>9.3}, {:>9.3}, {:>9.3}",
-            *scenario_tick, susceptible.0, infected.0, recovered.0
+            scenario_tick, susceptible.0, infected.0, recovered.0
         );
     }
 }
@@ -116,12 +131,12 @@ fn log_every_half_second(
 fn log_changes_in_infected(
     query: Query<
         (
-            &disease_compartment::Susceptible,
-            &disease_compartment::Infected,
-            &disease_compartment::Recovered,
+            &sir_spread_model::Susceptible,
+            &sir_spread_model::Infected,
+            &sir_spread_model::Recovered,
         ),
         // notice this query in comparison to [log_every_half_second]
-        Changed<disease_compartment::Infected>,
+        Changed<sir_spread_model::Infected>,
     >,
     scenario_tick: Res<ScenarioTick>,
 ) {
@@ -136,7 +151,7 @@ fn log_changes_in_infected(
 /// Stops the scenario if there are no active infections.
 fn terminate_if_outbreak_is_over(
     scenario_configuration: Res<ScenarioConfiguration>,
-    query: Query<&disease_compartment::Infected>,
+    query: Query<&sir_spread_model::Infected>,
     mut event_writer: EventWriter<AppExit>,
     tick: Res<ScenarioTick>,
 ) {
@@ -150,86 +165,5 @@ fn terminate_if_outbreak_is_over(
     scenario_configuration.max_timesteps == tick.0
     {
         event_writer.send(AppExit);
-    }
-}
-
-mod disease_compartment {
-    use super::*;
-
-    #[readonly::make]
-    #[derive(Debug, derive_more::Into, derive_more::From)]
-    pub struct Susceptible(pub f64);
-    #[readonly::make]
-    #[derive(Debug, derive_more::Into, derive_more::From)]
-    pub struct Infected(pub f64);
-    #[readonly::make]
-    #[derive(Debug, derive_more::Into, derive_more::From)]
-    pub struct Recovered(pub f64);
-    // pub struct Dead(pub usize);
-
-    #[derive(Debug, Bundle)]
-    pub struct DiseaseCompartment {
-        susceptible: Susceptible,
-        infected: Infected,
-        recovered: Recovered,
-    }
-
-    impl DiseaseCompartment {
-        pub fn new(herd_size: usize) -> Self {
-            Self {
-                susceptible: (herd_size as f64).into(),
-                infected: (0.).into(),
-                recovered: (0.).into(),
-            }
-        }
-    }
-
-    pub fn update_disease_compartments(
-        // mut commands: Commands,
-        scenario_configuration: Res<ScenarioConfiguration>,
-        mut query: Query<(&mut Susceptible, &mut Infected, &mut Recovered)>,
-    ) {
-        let ScenarioConfiguration {
-            infection_rate,
-            recovery_rate,
-            ..
-        } = *scenario_configuration;
-        for (mut susceptible, mut infected, mut recovered) in query.iter_mut() {
-            let delta_infected = infection_rate * susceptible.0 * infected.0;
-            // newly infected may only be atmost the number of susceptible animals
-            let delta_infected = delta_infected.min(susceptible.0);
-            let delta_recovered = recovery_rate * infected.0 as f64;
-            // number of recovered may at most be the number of infected
-            let delta_recovered = delta_recovered.min(infected.0);
-
-            // dbg!(delta_infected, delta_recovered);
-
-            susceptible.0 += -delta_infected;
-            infected.0 += delta_infected - delta_recovered;
-            recovered.0 += delta_recovered;
-        }
-    }
-
-    /// Place one infected individual into the mix.
-    pub fn seed_infection(
-        query: Query<(
-            &mut disease_compartment::Susceptible,
-            &mut disease_compartment::Infected,
-        )>,
-    ) {
-        query.for_each_mut(|(mut susceptible, mut infected)| {
-            susceptible.0 -= 1.;
-            (susceptible.0 < 0.).then(|| panic!("no susceptible individuals to infect"));
-            infected.0 += 1.;
-        });
-    }
-}
-
-/// Add a susceptible population to the mix.
-fn seed_population(mut command: Commands, scenario_configuration: Res<ScenarioConfiguration>) {
-    for herd_size in &scenario_configuration.herd_sizes {
-        command
-            .spawn()
-            .insert_bundle(DiseaseCompartment::new(*herd_size));
     }
 }

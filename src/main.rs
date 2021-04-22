@@ -30,7 +30,6 @@ struct ScenarioTick(u64);
 
 impl ScenarioTick {
     pub fn update(&mut self) {
-        // self.0 += 1;
         self.0 = self
             .0
             .checked_add(1)
@@ -103,8 +102,6 @@ fn log_every_half_second(
     )>,
 ) {
     for (susceptible, infected, recovered) in query.iter() {
-        // dbg!(state);
-        // println!("{:#.3?}", state);
         println!(
             "{:>9.3}, {:>9.3}, {:>9.3}",
             susceptible.0, infected.0, recovered.0
@@ -120,12 +117,11 @@ fn log_changes_in_infected(
             &disease_compartment::Infected,
             &disease_compartment::Recovered,
         ),
+        // notice this query in comparison to [log_every_half_second]
         Changed<disease_compartment::Infected>,
     >,
 ) {
     for (susceptible, infected, recovered) in query.iter() {
-        // dbg!(state);
-        // println!("{:#.3?}", state);
         println!(
             "{:>9.3}, {:>9.3}, {:>9.3}",
             susceptible.0, infected.0, recovered.0
@@ -210,6 +206,7 @@ mod disease_compartment {
         }
     }
 
+    /// Place one infected individual into the mix.
     pub fn seed_infection(
         query: Query<(
             &mut disease_compartment::Susceptible,
@@ -218,11 +215,13 @@ mod disease_compartment {
     ) {
         query.for_each_mut(|(mut susceptible, mut infected)| {
             susceptible.0 -= 1.;
+            (susceptible.0 < 0.).then(|| panic!("no susceptible individuals to infect"));
             infected.0 += 1.;
         });
     }
 }
 
+/// Add a susceptible population to the mix.
 fn seed_population(mut command: Commands, scenario_configuration: Res<ScenarioConfiguration>) {
     for herd_size in &scenario_configuration.herd_sizes {
         command

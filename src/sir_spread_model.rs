@@ -11,17 +11,20 @@ pub struct Infected(pub f64);
 #[readonly::make]
 #[derive(Debug, derive_more::Into, derive_more::From)]
 pub struct Recovered(pub f64);
+
 // pub struct Dead(pub usize);
 
+/// This is only used to instantiate the entites that are susceptible
+/// to this disease.
 #[readonly::make]
 #[derive(Debug, Bundle)]
-pub struct DiseaseCompartment {
+pub struct DiseaseCompartments {
     susceptible: Susceptible,
     infected: Infected,
     recovered: Recovered,
 }
 
-impl DiseaseCompartment {
+impl DiseaseCompartments {
     pub fn new(herd_size: usize) -> Self {
         Self {
             susceptible: (herd_size as f64).into(),
@@ -66,9 +69,16 @@ pub fn seed_infection(
         &mut Infected,
     )>,
 ) {
+    let mut empty_query = true;
     query.for_each_mut(|(mut susceptible, mut infected)| {
         susceptible.0 -= 1.;
         (susceptible.0 < 0.).then(|| panic!("no susceptible individuals to infect"));
         infected.0 += 1.;
+
+        empty_query = false;
     });
+
+    if empty_query {
+       println!("failed to seed infection, as no viable infection point was found"); 
+    }
 }

@@ -7,6 +7,9 @@
 //! - [ ] Add UI that shows progress
 //! - [ ] Add CLI interface
 //!
+//!
+//! inspiration/formulas can be found [here](https://www.uio.no/studier/emner/matnat/ifi/IN1900/h18/ressurser/slides/disease_modeling.pdf)
+//! For [SEIR-model](http://indico.ictp.it/event/7960/session/3/contribution/19/material/slides/0.pdf)
 
 use std::collections::HashMap;
 
@@ -14,7 +17,7 @@ use std::collections::HashMap;
 
 use bevy::{app::AppExit, core::FixedTimestep, prelude::*};
 mod sir_spread_model;
-use cattle_population::{CattleFarm, CattleFarmBundle, FarmId, HerdSize};
+use cattle_population::{FarmId, HerdSize};
 use itertools::Itertools;
 use sir_spread_model::{
     update_disease_compartments, DiseaseCompartments,
@@ -85,16 +88,22 @@ fn main() {
             max_timesteps: 1_000_000,
             max_repetitions: 2,
         })
-        .insert_resource(WithinHerdDiseaseParameters::new(0.0003, 0.01))
+        // .insert_resource(WithinHerdDiseaseParameters::new(0.0003, 0.01))
+        .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
         .add_startup_stage(Seed::Population, SystemStage::parallel())
         .add_startup_stage_after(Seed::Population, Seed::Infection, SystemStage::parallel())
         .add_startup_system_to_stage(Seed::Population, seed_cattle_population.system())
-        // .add_startup_system_to_stage(Seed::Population, seed_population.system())
         .add_startup_system_to_stage(Seed::Infection, sir_spread_model::seed_infection.system())
+        .add_startup_system_to_stage(
+            Seed::Infection,
+            between_herd_spread_model::setup_between_herd_spread_model.system(),
+        )
         // TODO: Add disease spread stage
         .add_system_set_to_stage(
             CoreStage::Update,
-            SystemSet::new().with_system(update_disease_compartments.system()),
+            SystemSet::new()
+                .with_system(update_disease_compartments.system())
+                .with_system(between_herd_spread_model::update_between_herd_spread_model.system()),
         )
         // .add_system_to_stage(CoreStage::Update, examine_population.system())
         // TODO: add recorder
@@ -125,7 +134,8 @@ fn print_population_disease_states(
     mut event_reader: EventReader<AppExit>,
 ) {
     if event_reader.iter().next().is_some() {
-        let (inf, sus): (Vec<_>, Vec<_>) = query.iter().cloned().unzip();
+        let (inf, sus): (Vec<Infected>, Vec<Susceptible>) =
+            query.iter().map(|x| (x.0, x.1)).unzip();
         println!(
             "{} =>  \nTotal infected: {:?}/
                     \nTotal susceptible: {:?}",
@@ -149,7 +159,8 @@ fn seed_cattle_population(
     // FarmId and Entity id has to correspond, thus we add a resource
     // to contain this mapping.
     //TODO: maybe just collect, then find the length, and iterate further then
-    let mut farm_id_to_entity_map: HashMap<FarmId, _> = HashMap::with_capacity(cattle_population_bundle.clone().count());
+    let mut farm_id_to_entity_map: HashMap<FarmId, _> =
+        HashMap::with_capacity(cattle_population_bundle.clone().count());
 
     for bundle in cattle_population_bundle {
         let herd_size = bundle.herd_size;
@@ -160,7 +171,7 @@ fn seed_cattle_population(
             .insert_bundle(DiseaseCompartments::new(herd_size.0))
             .insert(initial_disease_parameters.to_owned())
             .id();
-        
+
         farm_id_to_entity_map.insert(farm_id, farm_entity_id);
     }
 

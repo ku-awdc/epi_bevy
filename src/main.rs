@@ -125,11 +125,7 @@ fn print_population_disease_states(
     mut event_reader: EventReader<AppExit>,
 ) {
     if event_reader.iter().next().is_some() {
-        let (inf, sus): (Vec<Infected>, Vec<Susceptible>) = query
-            .iter()
-            // .cloned()
-            // .map(|(x, y)| (x, y))
-            .unzip();
+        let (inf, sus): (Vec<_>, Vec<_>) = query.iter().cloned().unzip();
         println!(
             "{} =>  \nTotal infected: {:?}/
                     \nTotal susceptible: {:?}",

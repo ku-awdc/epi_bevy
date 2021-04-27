@@ -1,11 +1,16 @@
 //!
 //! - [x] Run headless
 //! - [x] Implement SIR model
+//! - [ ] Add repopulation to the model
 //! - [ ] Add repetitions/iterations to the model
 //! - [ ] Add recording through [sled]
 //! - [ ] Add UI that shows progress
 //! - [ ] Add CLI interface
 //!
+
+use std::collections::HashMap;
+
+//TODO: make a framework-prelude
 
 use bevy::{app::AppExit, core::FixedTimestep, prelude::*};
 mod sir_spread_model;
@@ -135,20 +140,35 @@ fn print_population_disease_states(
     }
 }
 
+//TODO: maybe this should implement Default as a panic?
+#[readonly::make]
+#[derive(Debug, derive_more::Into, derive_more::From)]
+pub struct FarmIdEntityMap(pub HashMap<FarmId, Entity>);
+
 fn seed_cattle_population(
     mut commands: Commands,
     initial_disease_parameters: Res<WithinHerdDiseaseParameters>,
 ) {
     let cattle_population_bundle = cattle_population::load_ring_population();
+    // FarmId and Entity id has to correspond, thus we add a resource
+    // to contain this mapping.
+    //TODO: maybe just collect, then find the length, and iterate further then
+    let mut farm_id_to_entity_map: HashMap<FarmId, _> = HashMap::with_capacity(cattle_population_bundle.clone().count());
 
     for bundle in cattle_population_bundle {
         let herd_size = bundle.herd_size;
+        let farm_id = bundle.farm_id;
 
-        commands
+        let farm_entity_id = commands
             .spawn_bundle(bundle)
             .insert_bundle(DiseaseCompartments::new(herd_size.0))
-            .insert(initial_disease_parameters.to_owned());
+            .insert(initial_disease_parameters.to_owned())
+            .id();
+        
+        farm_id_to_entity_map.insert(farm_id, farm_entity_id);
     }
+
+    commands.insert_resource(FarmIdEntityMap::from(farm_id_to_entity_map));
 }
 
 fn examine_population(

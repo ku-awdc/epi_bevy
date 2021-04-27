@@ -1,18 +1,19 @@
 //!
 //!
 //!
-use bevy::ecs::bundle::Bundle;
+use bevy::prelude::*;
+
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 
 use itertools::Itertools;
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct CattleFarm;
 
 #[readonly::make]
-#[derive(Debug, Clone, PartialEq, derive_more::Display)]
+#[derive(Debug, Copy, Clone, PartialEq, derive_more::Display, Hash, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct FarmId(pub usize);
 
@@ -21,7 +22,7 @@ pub struct FarmId(pub usize);
 #[derive(Debug, Clone, Bundle)]
 pub struct CattleFarmBundle {
     cattle_farm: CattleFarm,
-    farm_id: FarmId,
+    pub farm_id: FarmId,
     pub herd_size: HerdSize,
     adjacent_farms: AdjacentFarms,
 }
@@ -31,16 +32,15 @@ pub struct CattleFarmBundle {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct HerdSize(pub usize);
 
-
 #[readonly::make]
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct AdjacentFarms(pub Vec<FarmId>);
 
 #[cfg(feature = "serialize")]
-pub fn load_ring_population() -> impl Iterator<Item = CattleFarmBundle> {
+pub fn load_ring_population() -> impl Iterator<Item = CattleFarmBundle> + Clone {
     #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     struct PopulationRecord {
         farm_id: FarmId,
         herd_size: HerdSize,
@@ -55,7 +55,7 @@ pub fn load_ring_population() -> impl Iterator<Item = CattleFarmBundle> {
     // dbg!(pop_record.iter().take(10).collect_vec());
 
     #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     struct AdjacencyRecord {
         farm_id: FarmId,
         #[serde(rename(deserialize = "adjacent"))]

@@ -20,7 +20,7 @@ impl DiseaseParameters {
 }
 
 #[readonly::make]
-#[derive(Debug, derive_more::Into, derive_more::From)]
+#[derive(Debug, Clone, Copy, derive_more::Into, derive_more::From, derive_more::Add)]
 pub struct Susceptible(pub usize);
 #[readonly::make]
 #[derive(Debug, Clone, Copy, derive_more::Into, derive_more::From, derive_more::Add)]

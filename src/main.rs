@@ -80,7 +80,7 @@ fn main() {
             max_timesteps: 1_000_000,
             max_repetitions: 2,
         })
-        .insert_resource(WithinHerdDiseaseParameters::new(0.003, 0.01))
+        .insert_resource(WithinHerdDiseaseParameters::new(0.0003, 0.01))
         .add_startup_stage(Seed::Population, SystemStage::parallel())
         .add_startup_stage_after(Seed::Population, Seed::Infection, SystemStage::parallel())
         .add_startup_system_to_stage(Seed::Population, seed_cattle_population.system())
@@ -102,7 +102,7 @@ fn main() {
         .add_system(
             log_every_half_second
                 .system()
-                .with_run_criteria(FixedTimestep::step(1.)),
+                .with_run_criteria(FixedTimestep::step(0.1)),
         )
         // TODO: add application loop that displays the current estimates
         // TODO: stop if no-one is infected (or max timesteps has been reached)
@@ -120,13 +120,17 @@ fn print_population_disease_states(
     mut event_reader: EventReader<AppExit>,
 ) {
     if event_reader.iter().next().is_some() {
-        let (inf, sus) = query.iter().unzip();
+        let (inf, sus): (Vec<Infected>, Vec<Susceptible>) = query
+            .iter()
+            // .cloned()
+            // .map(|(x, y)| (x, y))
+            .unzip();
         println!(
-            "{} => \nTotal infected: {:?}/
-                           \nTotal susceptible: {:?}",
+            "{} =>  \nTotal infected: {:?}/
+                    \nTotal susceptible: {:?}",
             tick.0,
-            inf.fold1(|x, y| x + y),
-            sus.fold1(|x, y| x + y)
+            inf.into_iter().fold1(|x, y| x + y),
+            sus.into_iter().fold1(|x, y| x + y),
         );
     }
 }

@@ -19,11 +19,11 @@ impl DiseaseParameters {
     }
 }
 
-#[readonly::make]
-#[derive(Debug, Clone, Copy, derive_more::Into, derive_more::From, derive_more::Add)]
+// #[readonly::make]
+#[derive(Debug, Clone, Copy, derive_more::Into, derive_more::From, derive_more::Add, derive_more::AddAssign)]
 pub struct Susceptible(pub usize);
-#[readonly::make]
-#[derive(Debug, Clone, Copy, derive_more::Into, derive_more::From, derive_more::Add)]
+// #[readonly::make]
+#[derive(Debug, Clone, Copy, derive_more::Into, derive_more::From, derive_more::Add, derive_more::AddAssign)]
 pub struct Infected(pub usize);
 
 impl Infected {
@@ -31,9 +31,9 @@ impl Infected {
         Self(total_infected)
     }
 
-    pub fn add(&mut self) {
-        self.0 += 1;
-    }
+    // pub fn add(&mut self) {
+    //     self.0 += 1;
+    // }
 }
 
 #[readonly::make]
@@ -124,7 +124,7 @@ pub fn update_disease_compartments(
 pub fn seed_infection(query: Query<(&mut Susceptible, &mut Infected)>) {
     let mut empty_query = true;
     query.for_each_mut(|(mut susceptible, mut infected)| {
-        susceptible.0 -= 1;
+        // susceptible.0 -= 1;
         susceptible.0 = susceptible
             .0
             .checked_sub(1)
@@ -132,11 +132,11 @@ pub fn seed_infection(query: Query<(&mut Susceptible, &mut Infected)>) {
 
         // (susceptible.0 < 0).then(|| panic!("no susceptible individuals to infect"));
         infected.0 = infected.0.saturating_add(1);
-
+        info!("inserted an infection");
         empty_query = false;
     });
 
     if empty_query {
-        println!("failed to seed infection, as no viable infection point was found");
+        panic!("failed to seed infection, as no viable infection point was found");
     }
 }

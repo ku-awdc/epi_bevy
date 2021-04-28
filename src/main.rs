@@ -15,7 +15,7 @@ use std::collections::HashMap;
 
 //TODO: make a framework-prelude
 
-use bevy::{app::AppExit, core::FixedTimestep, prelude::*};
+use bevy::{app::AppExit, core::FixedTimestep, diagnostic::{DiagnosticsPlugin, LogDiagnosticsPlugin}, log::LogPlugin, prelude::*};
 mod sir_spread_model;
 use cattle_population::{FarmId, HerdSize};
 use itertools::Itertools;
@@ -23,6 +23,8 @@ use sir_spread_model::{
     update_disease_compartments, DiseaseCompartments,
     DiseaseParameters as WithinHerdDiseaseParameters, Infected, Susceptible,
 };
+
+use crate::between_herd_spread_model::ContactRate;
 
 mod between_herd_spread_model;
 
@@ -63,12 +65,14 @@ fn update_scenario_tick(mut scenario_tick: ResMut<ScenarioTick>) {
 /// Defining stages for seeding the population and the infection.
 /// This is necessary to add the infection after the population has been
 /// initialised.
-#[derive(PartialEq, Eq, Debug, Hash, Clone, StageLabel)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, StageLabel)]
 enum Seed {
     /// Seed population stage
     Population,
     /// Seed infection stage
     Infection,
+    /// Seed contacts stage
+    Contacts,
 }
 
 fn main() {
@@ -77,6 +81,10 @@ fn main() {
 
     App::build()
         .add_plugins(MinimalPlugins)
+        // .add_plugins(DefaultPlugins)
+        .add_plugin(LogPlugin)
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(DiagnosticsPlugin)
         .insert_resource(StdRng::seed_from_u64(20210426))
         .insert_resource(ScenarioTick(0))
         .add_system(update_scenario_tick.system())
@@ -88,19 +96,21 @@ fn main() {
             max_timesteps: 1_000_000,
             max_repetitions: 2,
         })
-        // .insert_resource(WithinHerdDiseaseParameters::new(0.0003, 0.01))
-        .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
+        .insert_resource(WithinHerdDiseaseParameters::new(0.003, 0.001))
+        // .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
+        .insert_resource(ContactRate::new(0.5))
+        // .insert_resource(ContactRate::new(0.0))
         .add_startup_stage(Seed::Population, SystemStage::parallel())
         .add_startup_stage_after(Seed::Population, Seed::Infection, SystemStage::parallel())
         .add_startup_system_to_stage(Seed::Population, seed_cattle_population.system())
         .add_startup_system_to_stage(Seed::Infection, sir_spread_model::seed_infection.system())
+        .add_startup_stage_after(Seed::Infection, Seed::Contacts, SystemStage::parallel())
         .add_startup_system_to_stage(
-            Seed::Infection,
+            Seed::Contacts,
             between_herd_spread_model::setup_between_herd_spread_model.system(),
         )
         // TODO: Add disease spread stage
-        .add_system_set_to_stage(
-            CoreStage::Update,
+        .add_system_set(
             SystemSet::new()
                 .with_system(update_disease_compartments.system())
                 .with_system(between_herd_spread_model::update_between_herd_spread_model.system()),
@@ -116,12 +126,12 @@ fn main() {
         .add_system(
             log_every_half_second
                 .system()
-                .with_run_criteria(FixedTimestep::step(0.1)),
+                .with_run_criteria(FixedTimestep::step(0.700)),
         )
         // TODO: add application loop that displays the current estimates
         // TODO: stop if no-one is infected (or max timesteps has been reached)
-        .add_system_to_stage(CoreStage::Update, terminate_if_outbreak_is_over.system())
-        .add_system(print_population_disease_states.system())
+        // .add_system(print_population_disease_states.system())
+        .add_system(terminate_if_outbreak_is_over.system())
         // .insert_resource(ReportExecutionOrderAmbiguities) // requires [LogPlugin]
         .run();
 
@@ -153,18 +163,22 @@ pub struct FarmIdEntityMap(pub HashMap<FarmId, Entity>);
 
 fn seed_cattle_population(
     mut commands: Commands,
-    initial_disease_parameters: Res<WithinHerdDiseaseParameters>,
+    initial_disease_parameters: Option<Res<WithinHerdDiseaseParameters>>,
 ) {
+    let initial_disease_parameters =
+        initial_disease_parameters.expect("no default/initial disease parameters are set.");
     let cattle_population_bundle = cattle_population::load_ring_population();
     // FarmId and Entity id has to correspond, thus we add a resource
     // to contain this mapping.
     //TODO: maybe just collect, then find the length, and iterate further then
     let mut farm_id_to_entity_map: HashMap<FarmId, _> =
         HashMap::with_capacity(cattle_population_bundle.clone().count());
+    info!("{:}", farm_id_to_entity_map.len());
 
     for bundle in cattle_population_bundle {
         let herd_size = bundle.herd_size;
         let farm_id = bundle.farm_id;
+        info!("inserted a herd of size {:?}", herd_size);
 
         let farm_entity_id = commands
             .spawn_bundle(bundle)
@@ -210,7 +224,7 @@ fn log_every_half_second(
     scenario_tick: Res<ScenarioTick>,
 ) {
     for (farm_id, susceptible, infected, recovered) in query.iter() {
-        println!(
+        info!(
             "{} => {}: {:>9.3}, {:>9.3}, {:>9.3}",
             scenario_tick.0, farm_id, susceptible.0, infected.0, recovered.0
         );
@@ -260,6 +274,7 @@ fn terminate_if_outbreak_is_over(
     scenario_configuration.max_timesteps == tick.0
         )
     {
+        info!("Terminated at tick: {}", tick.0);
         event_writer.send(AppExit);
     }
 }

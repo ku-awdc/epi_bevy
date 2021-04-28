@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use rand::{prelude::StdRng, Rng, RngCore};
+use rand::{prelude::StdRng, Rng};
 
 #[readonly::make]
 #[derive(Debug, Clone, Copy)]
@@ -25,6 +25,17 @@ pub struct Susceptible(pub usize);
 #[readonly::make]
 #[derive(Debug, Clone, Copy, derive_more::Into, derive_more::From, derive_more::Add)]
 pub struct Infected(pub usize);
+
+impl Infected {
+    pub fn new(total_infected: usize) -> Self {
+        Self(total_infected)
+    }
+
+    pub fn add(&mut self) {
+        self.0 += 1;
+    }
+}
+
 #[readonly::make]
 #[derive(Debug, derive_more::Into, derive_more::From)]
 pub struct Recovered(pub usize);

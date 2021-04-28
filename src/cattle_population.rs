@@ -101,6 +101,6 @@ mod tests {
     fn test_loading_ring_population() {
         let iter_cattle_farm_bundle = load_ring_population();
 
-        dbg!(iter_cattle_farm_bundle.take(10).collect_vec());
+        info!("{:#?}", iter_cattle_farm_bundle.take(10).collect_vec());
     }
 }

@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use bevy::prelude::*;
 use bevy::{ecs::system::SystemParam, utils::HashSet};
@@ -9,13 +9,10 @@ use crate::{sir_spread_model::Infected, ScenarioTick};
 
 #[derive(SystemParam)]
 pub struct Recorder<'a> {
-    previously_active_infections: Res<'a, HashSet<Entity>>,
-    total_infected_farms: Res<'a, BTreeMap<ScenarioTick, usize>>,
+    previously_active_infections: Local<'a, HashSet<Entity>>,
+    total_infected_farms: Local<'a, BTreeMap<ScenarioTick, usize>>,
 }
-pub fn record_total_infected_farms<'a>(
-    recorder: &'static Local<Recorder<'a>>,
-    query: Query<(Entity, &Infected)>,
-) {
+pub fn record_total_infected_farms(mut recorder: Recorder, query: Query<(Entity, &Infected)>) {
     let actively_infected_farms: HashSet<_> = query
         .iter()
         .filter(|x| {
@@ -24,9 +21,15 @@ pub fn record_total_infected_farms<'a>(
         })
         .map(|x| x.0)
         .collect();
-    let previously_actively_infected = recorder.previously_active_infections;
+    let tmp = recorder.previously_active_infections.clone();
     let mut newly_infected_farms =
-        (&actively_infected_farms).difference(&*previously_actively_infected);
+        (&actively_infected_farms).difference(&tmp);
+
+    //FIXME: update previously
+
+    recorder
+        .previously_active_infections
+        .extend(newly_infected_farms.clone());
 
     if newly_infected_farms.next().is_some() {
         // there are some newly infected farms.

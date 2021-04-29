@@ -42,7 +42,7 @@ pub struct ScenarioConfiguration {
 }
 
 /// Scenario ticks
-#[derive(Debug, derive_more::Display)]
+#[derive(Debug, PartialOrd, Ord, PartialEq, Eq, derive_more::Display)]
 pub struct ScenarioTick(u64);
 
 impl ScenarioTick {
@@ -100,9 +100,9 @@ fn main() {
             max_timesteps: 1_000_000,
             max_repetitions: 2,
         })
-        .insert_resource(WithinHerdDiseaseParameters::new(0.003, 0.001))
-        // .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
-        .insert_resource(between_herd_spread_model::ContactRate::new(0.5))
+        // .insert_resource(WithinHerdDiseaseParameters::new(0.003, 0.001))
+        .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
+        .insert_resource(between_herd_spread_model::ContactRate::new(0.001))
         // .insert_resource(ContactRate::new(0.0))
         .add_startup_stage(Seed::Population, SystemStage::parallel())
         .add_startup_stage_after(Seed::Population, Seed::Infection, SystemStage::parallel())

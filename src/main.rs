@@ -43,7 +43,7 @@ pub struct ScenarioConfiguration {
 
 /// Scenario ticks
 #[derive(Debug, derive_more::Display)]
-struct ScenarioTick(u64);
+pub struct ScenarioTick(u64);
 
 impl ScenarioTick {
     pub fn update(&mut self) {

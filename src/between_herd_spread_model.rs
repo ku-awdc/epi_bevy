@@ -11,7 +11,11 @@ use bevy::prelude::*;
 use itertools::Itertools;
 use rand::prelude::*;
 
-use crate::{FarmIdEntityMap, cattle_population::{AdjacentFarms, CattleFarm, FarmId, HerdSize}, sir_spread_model::{Infected, Susceptible}};
+use crate::{
+    cattle_population::{AdjacentFarms, CattleFarm, FarmId, HerdSize},
+    sir_spread_model::{Infected, Susceptible},
+    FarmIdEntityMap,
+};
 
 #[derive(Debug)]
 pub struct SpreadModel {}
@@ -43,7 +47,6 @@ pub fn setup_between_herd_spread_model(
 }
 
 pub fn update_between_herd_spread_model(
-    commands: Commands,
     mut rng: ResMut<StdRng>,
     farm_map: Res<FarmIdEntityMap>,
     mut query: QuerySet<(
@@ -89,10 +92,16 @@ pub fn update_between_herd_spread_model(
             //FIXME: can an infected farm infect another infected farm?
 
             // now will this result in an infection?
-            let infection_pressure =  infected.0 as f64 / herd_size.0 as f64;
-            debug_assert!(herd_size.0 >= infected.0, "cannot have more infected animals than animals in the farm.");
+            let infection_pressure = infected.0 as f64 / herd_size.0 as f64;
+            debug_assert!(
+                herd_size.0 >= infected.0,
+                "cannot have more infected animals than animals in the farm."
+            );
 
-            // info!("infection pressure: {} / {} = {:.3}", infected.0, herd_size.0, infection_pressure);
+            // info!(
+            //     "infection pressure: {} / {} = {:.3}",
+            //     infected.0, herd_size.0, infection_pressure
+            // );
 
             if rng.gen_bool(infection_pressure) {
                 // add infection to target
@@ -100,22 +109,42 @@ pub fn update_between_herd_spread_model(
                 let target_farm_entity_id = farm_map.0.get(target_farm_id).unwrap();
                 // info!("target_farm id and entity.id: {:?}, {:?}", target_farm_id, target_farm_entity_id);
                 // let mut target_farm_infected_count = query.q1_mut().get_component_mut::<Infected>(*target_farm_entity_id).expect("the query is not finding the target farm that needs to have its infection increased");
-                
+
                 //FIXME: this made the disease compartments no longer be read-only
-                // incorporate that into a disease model interface 
-                query.q1_mut().iter_mut().for_each(|(mut sus, mut inf)|{
-                    if sus.0 >= 1 {
-                        sus.0 -= 1;
-                        inf.0 += 1;
-                    }
-
-                });
-
-                Some((from_farm_id, *target_farm_id))
+                // incorporate that into a disease model interface
+                let successful_infection = query
+                    .q1_mut()
+                    .get_mut(*target_farm_entity_id)
+                    .map(|(mut sus, mut inf)| {
+                        if sus.0 >= 1 {
+                            sus.0 -= 1;
+                            inf.0 += 1;
+                            true
+                        } else {
+                            false
+                        }
+                    })
+                    .expect("failed to find target farm to infect");
+                if successful_infection {
+                    Some((from_farm_id, *target_farm_id))
+                } else {
+                    // there wasn't any susceptible animals to infect
+                    None
+                }
             } else {
+                // no contact between the two determined
                 None
             }
-        }).collect_vec();
-        // TODO: record how much this impacts the disease spread.
-    // info!("Between herd infections: {}", new_infection_events.len());
+        })
+        .collect_vec();
+
+    // TODO: record how much this impacts the disease spread.
+    let total_new_infection_events = new_infection_events.len();
+
+    if total_new_infection_events > 0 {
+        trace!(
+            "Total new between-herd infections: {}",
+            new_infection_events.len()
+        );
+    }
 }

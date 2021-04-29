@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use rand::{prelude::StdRng, Rng};
+use rand::prelude::*;
 
 #[readonly::make]
 #[derive(Debug, Clone, Copy)]
@@ -20,10 +20,26 @@ impl DiseaseParameters {
 }
 
 // #[readonly::make]
-#[derive(Debug, Clone, Copy, derive_more::Into, derive_more::From, derive_more::Add, derive_more::AddAssign)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    derive_more::Into,
+    derive_more::From,
+    derive_more::Add,
+    derive_more::AddAssign,
+)]
 pub struct Susceptible(pub usize);
 // #[readonly::make]
-#[derive(Debug, Clone, Copy, derive_more::Into, derive_more::From, derive_more::Add, derive_more::AddAssign)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    derive_more::Into,
+    derive_more::From,
+    derive_more::Add,
+    derive_more::AddAssign,
+)]
 pub struct Infected(pub usize);
 
 impl Infected {
@@ -113,16 +129,47 @@ pub fn update_disease_compartments(
             infected.0.saturating_add(delta_infected - delta_recovered)
         };
 
-        // infected
-        //     .0
-        //     .saturating_add(delta_infected.saturating_sub(delta_recovered));
         recovered.0 = recovered.0.saturating_add(delta_recovered);
     }
 }
 
 /// Place one infected individual into the mix.
-pub fn seed_infection(query: Query<(&mut Susceptible, &mut Infected)>) {
+pub fn seed_infection_random(
+    mut rng: ResMut<StdRng>,
+    mut query: Query<(&mut Susceptible, &mut Infected)>,
+) {
     let mut empty_query = true;
+    // currently this infects everyone
+    // for between-herd infection, we should just infect one farm.
+    // Choose that one at random.. Why not?
+    query
+        .iter_mut()
+        .choose(&mut *rng)
+        .map(|(mut susceptible, mut infected)| {
+            // .for_each_mut(|(mut susceptible, mut infected)| {
+            // susceptible.0 -= 1;
+            susceptible.0 = susceptible
+                .0
+                .checked_sub(1)
+                .expect("no susceptible individuals to infect");
+
+            // (susceptible.0 < 0).then(|| panic!("no susceptible individuals to infect"));
+            infected.0 = infected.0.saturating_add(1);
+            empty_query = false;
+        })
+        .expect("couldn't find a farm to seed the infection.");
+
+    if empty_query {
+        panic!("failed to seed infection, as no viable infection point was found");
+    }
+}
+
+/// Place one infected individual into the mix.
+pub fn seed_infected_everywhere(query: Query<(&mut Susceptible, &mut Infected)>) {
+    let mut empty_query = true;
+    // currently this infects everyone
+    // for between-herd infection, we should just infect one farm.
+    // Choose that one at random.. Why not?
     query.for_each_mut(|(mut susceptible, mut infected)| {
         // susceptible.0 -= 1;
         susceptible.0 = susceptible
@@ -132,7 +179,6 @@ pub fn seed_infection(query: Query<(&mut Susceptible, &mut Infected)>) {
 
         // (susceptible.0 < 0).then(|| panic!("no susceptible individuals to infect"));
         infected.0 = infected.0.saturating_add(1);
-        info!("inserted an infection");
         empty_query = false;
     });
 

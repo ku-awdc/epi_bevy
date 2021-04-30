@@ -42,7 +42,7 @@ pub struct ScenarioConfiguration {
 }
 
 /// Scenario ticks
-#[derive(Debug, PartialOrd, Ord, PartialEq, Eq, derive_more::Display)]
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, derive_more::Display)]
 pub struct ScenarioTick(u64);
 
 impl ScenarioTick {

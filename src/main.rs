@@ -98,7 +98,7 @@ fn main() {
     /// Author: TheRuwuMeatball
     pub fn dispose<T>(_: In<T>) {}
 
-    App::build()
+    let scenario_app = App::build()
         .add_plugins(MinimalPlugins)
         // .add_plugins(DefaultPlugins)
         .add_plugin(LogPlugin)
@@ -172,7 +172,9 @@ fn main() {
         // .add_system(print_population_disease_states.system())
         .add_system(terminate_if_outbreak_is_over.system())
         // .insert_resource(ReportExecutionOrderAmbiguities) // requires [LogPlugin]
-        .run();
+        ;
+    
+    scenario_app.run();
 
     info!("Finished simulation.");
 }

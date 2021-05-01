@@ -48,11 +48,27 @@ pub fn setup_between_herd_spread_model(
 // for now until there appears a system that needs to use it somehow, and then
 // make that available as a resource?
 
+/// Components necessary to determine the infection pressure of actively
+/// infected farms.
+type InfectedFarms = (
+    &'static Infected,
+    &'static AdjacentFarms,
+    &'static ContactRate,
+    &'static HerdSize,
+    &'static FarmId,
+);
+
+/// Components necessary to seed an infection
+type AffectedFarm = (&'static mut Susceptible, &'static mut Infected);
+
 #[derive(SystemParam)]
 pub struct BetweenHerdSpreadModel<'a> {
     /// No. of the last batch of between-herd events that was put out by this
     /// (spread) model.
     current_batch_id: Local<'a, usize>,
+
+    /// Get infected farms and spread through contacts to other farms.
+    query: QuerySet<(Query<'a, InfectedFarms>, Query<'a, AffectedFarm>)>,
 }
 
 pub fn update_between_herd_spread_model(
@@ -60,30 +76,31 @@ pub fn update_between_herd_spread_model(
     mut rng: ResMut<StdRng>,
     scenario_tick: Res<ScenarioTick>,
     farm_map: Res<FarmIdEntityMap>,
-    //TODO: move this to [BetweenHerdSpreadModel]
-    mut query: QuerySet<(
-        Query<(&Infected, &AdjacentFarms, &ContactRate, &HerdSize, &FarmId)>,
-        Query<(&mut Susceptible, &mut Infected)>,
-    )>,
 ) -> Option<InfectionEvents> {
     // determine from farms
     // let active_infected_farms = query.iter_mut().filter(|info| info.0.0 > 0);
 
     //FIXME: do something with thiss
     // let new_infection_events:Vec<(FarmId, FarmId)> = active_infected_farms
-    let infectious_farms: Vec<(Infected, AdjacentFarms, HerdSize, FarmId)> = query
+    // let infectious_farms: Vec<(Infected, AdjacentFarms, HerdSize, FarmId)> = model.query
+    // let infectious_farms = model.query
+    let infectious_farms = model
+        .query
         .q0()
         .iter()
         // first, is an infectious farm going to send out any batches of animals?
         //FIXME: ensure this works for all rates, not only for <= 1.
         // determine if there are animal movements
         .filter(|(_, _, contact_rate, _, _)| {
+            // .filter(|(farm, )| {
             let contact_rate: &&ContactRate = contact_rate;
 
             rng.gen_bool(contact_rate.0)
         })
         .filter(|info| {
+            // .filter(|(farm,)| {
             let infected: Infected = *info.0;
+            let infected: Infected = infected;
             infected.0 > 0
         })
         .map(
@@ -91,12 +108,14 @@ pub fn update_between_herd_spread_model(
                 (*info.0, info.1.clone(), *info.3, *info.4)
             },
         )
+        // .map(|(farm,)| farm.clone())
         .collect_vec();
 
     let new_infection_events: Vec<(FarmId, FarmId, usize)> = infectious_farms
         .into_iter()
         // determine destination farm (from, target)
         .filter_map(|(infected, adjacent_farms, herd_size, from_farm_id)| {
+            // .filter_map(|farm| {
             let herd_size: HerdSize = herd_size;
             let adjacent_farms: AdjacentFarms = adjacent_farms;
             let target_farm_id = adjacent_farms.0.choose(&mut *rng).unwrap();
@@ -120,12 +139,13 @@ pub fn update_between_herd_spread_model(
                 //TODO: facilitate this through a common trait for between-herd
                 let target_farm_entity_id = farm_map.0.get(target_farm_id).unwrap();
                 // info!("target_farm id and entity.id: {:?}, {:?}", target_farm_id, target_farm_entity_id);
-                // let mut target_farm_infected_count = query.q1_mut().get_component_mut::<Infected>(*target_farm_entity_id).expect("the query is not finding the target farm that needs to have its infection increased");
 
                 //FIXME: this made the disease compartments no longer be read-only
                 // incorporate that into a disease model interface
-                let successful_infection = query
+                let successful_infection = model
+                    .query
                     .q1_mut()
+                    // select target farm's disease components
                     .get_mut(*target_farm_entity_id)
                     .map(|(mut sus, mut inf)| {
                         if sus.0 >= 1 {
@@ -140,6 +160,7 @@ pub fn update_between_herd_spread_model(
                 if successful_infection {
                     // `origin ~> target, #new infections`
                     Some((from_farm_id, *target_farm_id, 1))
+                    // Some((farm.farm_id, *target_farm_id, 1))
                 } else {
                     // there wasn't any susceptible animals to infect
                     None
@@ -189,7 +210,7 @@ pub struct InfectionEvents {
     events: Vec<(FarmId, FarmId, usize)>,
 }
 
-/// Prints the between-herd spread events as they come. 
+/// Prints the between-herd spread events as they come.
 pub fn trace_between_herd_infection_events(In(events): In<Option<InfectionEvents>>) {
     if let Some(events) = events {
         let InfectionEvents {
@@ -201,7 +222,7 @@ pub fn trace_between_herd_infection_events(In(events): In<Option<InfectionEvents
         info!("Batch id: {}", batch_id);
         info!("Time: {}", scenario_tick.0);
         // info!("{:#?}", events);
-        for (origin, target, _) in events{
+        for (origin, target, _) in events {
             info!("{} -> {}", origin, target)
         }
     } else {

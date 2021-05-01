@@ -7,6 +7,7 @@
 //! The startup system [setup_between_herd_spread_model] is necessary for
 //! this to make sense.
 
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use itertools::Itertools;
 use rand::prelude::*;
@@ -14,11 +15,8 @@ use rand::prelude::*;
 use crate::{
     cattle_population::{AdjacentFarms, CattleFarm, FarmId, HerdSize},
     sir_spread_model::{Infected, Susceptible},
-    FarmIdEntityMap,
+    FarmIdEntityMap, ScenarioTick,
 };
-
-#[derive(Debug)]
-pub struct SpreadModel {}
 
 #[readonly::make]
 #[derive(Debug, Clone, Copy)]
@@ -46,14 +44,28 @@ pub fn setup_between_herd_spread_model(
     });
 }
 
+//TODO: Store the last infection events batches in the system param as a local
+// for now until there appears a system that needs to use it somehow, and then
+// make that available as a resource?
+
+#[derive(SystemParam)]
+pub struct BetweenHerdSpreadModel<'a> {
+    /// No. of the last batch of between-herd events that was put out by this
+    /// (spread) model.
+    current_batch_id: Local<'a, usize>,
+}
+
 pub fn update_between_herd_spread_model(
+    mut model: BetweenHerdSpreadModel,
     mut rng: ResMut<StdRng>,
+    scenario_tick: Res<ScenarioTick>,
     farm_map: Res<FarmIdEntityMap>,
+    //TODO: move this to [BetweenHerdSpreadModel]
     mut query: QuerySet<(
         Query<(&Infected, &AdjacentFarms, &ContactRate, &HerdSize, &FarmId)>,
         Query<(&mut Susceptible, &mut Infected)>,
     )>,
-) {
+) -> Option<InfectionEvents> {
     // determine from farms
     // let active_infected_farms = query.iter_mut().filter(|info| info.0.0 > 0);
 
@@ -81,7 +93,7 @@ pub fn update_between_herd_spread_model(
         )
         .collect_vec();
 
-    let new_infection_events: Vec<(FarmId, FarmId)> = infectious_farms
+    let new_infection_events: Vec<(FarmId, FarmId, usize)> = infectious_farms
         .into_iter()
         // determine destination farm (from, target)
         .filter_map(|(infected, adjacent_farms, herd_size, from_farm_id)| {
@@ -126,7 +138,8 @@ pub fn update_between_herd_spread_model(
                     })
                     .expect("failed to find target farm to infect");
                 if successful_infection {
-                    Some((from_farm_id, *target_farm_id))
+                    // `origin ~> target, #new infections`
+                    Some((from_farm_id, *target_farm_id, 1))
                 } else {
                     // there wasn't any susceptible animals to infect
                     None
@@ -142,9 +155,56 @@ pub fn update_between_herd_spread_model(
     let total_new_infection_events = new_infection_events.len();
 
     if total_new_infection_events > 0 {
+        // since there were new infections, update the model
+        *model.current_batch_id += 1;
+
+        // debug
         trace!(
             "Total new between-herd infections: {}",
-            new_infection_events.len()
+            total_new_infection_events
         );
+
+        //export that new infections events occurred
+        Some(InfectionEvents {
+            scenario_tick: *scenario_tick,
+            batch_id: *model.current_batch_id,
+            events: new_infection_events,
+        })
+    } else {
+        None
+    }
+}
+
+//TODO: Maybe this should reside in its own module, as it is generally unrelated
+// to the actual exectution of the between-herd spread module.
+
+pub struct InfectionEvents {
+    /// Scenario time for the infection events
+    scenario_tick: ScenarioTick,
+    /// Infection events are put out in batches
+    /// and they can be grouped according to them.
+    batch_id: usize,
+    /// An event consists an origin farm `from` and a target farm `to` and
+    /// then the number of infectious animals that were introduced to the fold.
+    events: Vec<(FarmId, FarmId, usize)>,
+}
+
+/// Prints the between-herd spread events as they come. 
+pub fn trace_between_herd_infection_events(In(events): In<Option<InfectionEvents>>) {
+    if let Some(events) = events {
+        let InfectionEvents {
+            scenario_tick,
+            batch_id,
+            events,
+        } = events;
+        info!("Between-herd spread events");
+        info!("Batch id: {}", batch_id);
+        info!("Time: {}", scenario_tick.0);
+        // info!("{:#?}", events);
+        for (origin, target, _) in events{
+            info!("{} -> {}", origin, target)
+        }
+    } else {
+        // no events was released now, so what gives?
     }
 }

@@ -15,14 +15,20 @@ use std::collections::HashMap;
 
 //TODO: make a framework-prelude
 
-use bevy::{app::AppExit, diagnostic::{DiagnosticsPlugin, LogDiagnosticsPlugin}, log::LogPlugin, prelude::*};
+use bevy::{
+    app::AppExit,
+    diagnostic::{DiagnosticsPlugin, LogDiagnosticsPlugin},
+    log::LogPlugin,
+    prelude::*,
+};
 mod sir_spread_model;
 use cattle_population::{FarmId, HerdSize};
 use itertools::Itertools;
 use sir_spread_model::{
-    DiseaseCompartments,
-    DiseaseParameters as WithinHerdDiseaseParameters, Infected, Susceptible,
+    DiseaseCompartments, DiseaseParameters as WithinHerdDiseaseParameters, Infected, Susceptible,
 };
+
+use crate::between_herd_spread_model::trace_between_herd_infection_events;
 mod between_herd_spread_model;
 mod between_herd_spread_model_record;
 mod cattle_population;
@@ -83,6 +89,15 @@ fn main() {
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 
+    /// Used to fuse the chained systems, such that one doesn't get a compilation
+    /// error even though the result of the last system isn't used.
+    ///
+    /// As [SystemStage] requires that the system-chain ends with unit-type `()`
+    /// we have to use this to fuse the chain.
+    ///
+    /// Author: TheRuwuMeatball
+    pub fn dispose<T>(_: In<T>) {}
+
     App::build()
         .add_plugins(MinimalPlugins)
         // .add_plugins(DefaultPlugins)
@@ -100,14 +115,18 @@ fn main() {
             max_timesteps: 1_000_000,
             max_repetitions: 2,
         })
-        // .insert_resource(WithinHerdDiseaseParameters::new(0.003, 0.001))
-        .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
-        .insert_resource(between_herd_spread_model::ContactRate::new(0.001))
+        // .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
+        // .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
+        .insert_resource(WithinHerdDiseaseParameters::new(0.03, 0.01))
+        .insert_resource(between_herd_spread_model::ContactRate::new(0.095))
         // .insert_resource(ContactRate::new(0.0))
         .add_startup_stage(Seed::Population, SystemStage::parallel())
         .add_startup_stage_after(Seed::Population, Seed::Infection, SystemStage::parallel())
         .add_startup_system_to_stage(Seed::Population, seed_cattle_population.system())
-        .add_startup_system_to_stage(Seed::Infection, sir_spread_model::seed_infection_random.system())
+        .add_startup_system_to_stage(
+            Seed::Infection,
+            sir_spread_model::seed_infection_random.system(),
+        )
         .add_startup_stage_after(Seed::Infection, Seed::Contacts, SystemStage::parallel())
         .add_startup_system_to_stage(
             Seed::Contacts,
@@ -118,13 +137,23 @@ fn main() {
             SystemSet::new()
                 .label(Processes::Disease)
                 .with_system(sir_spread_model::update_disease_compartments.system())
-                .with_system(between_herd_spread_model::update_between_herd_spread_model.system()),
+                .with_system(
+                    between_herd_spread_model::update_between_herd_spread_model
+                        .system()
+                        .chain(trace_between_herd_infection_events.system()),
+                ),
         )
         //TODO: add a label on thedisease stuff, and run this next stuff
         // after that
         // between-herd disease record
-        .add_system_set(SystemSet::new().label(Processes::Recording).after(Processes::Disease)
-            .with_system(between_herd_spread_model_record::record_total_infected_farms.system()))
+        .add_system_set(
+            SystemSet::new()
+                .label(Processes::Recording)
+                .after(Processes::Disease)
+                .with_system(
+                    between_herd_spread_model_record::record_total_infected_farms.system(),
+                ),
+        )
         // .add_system_to_stage(CoreStage::Update, examine_population.system())
         // TODO: add recorder
         // FIXME: this doesn't work;
@@ -148,6 +177,8 @@ fn main() {
     info!("Finished simulation.");
 }
 
+/// Printing the disease states whenever invoked. These disease states corresponds
+/// to [DiseaseCompartments].
 fn print_population_disease_states(
     tick: Res<ScenarioTick>,
     query: Query<(&Infected, &Susceptible)>,
@@ -167,6 +198,8 @@ fn print_population_disease_states(
 }
 
 //TODO: maybe this should implement Default as a panic?
+/// A mapping between the ECS's entity id's for the farms, and the inherent
+/// id numbering that comes from the scenario configuration (input files, etc.)
 #[readonly::make]
 #[derive(Debug, derive_more::Into, derive_more::From)]
 pub struct FarmIdEntityMap(pub HashMap<FarmId, Entity>);

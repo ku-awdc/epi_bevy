@@ -17,10 +17,19 @@ approx = "0.4.0"
 derive_more = "0.99.13"
 itertools = "0.10.0"
 readonly = "0.2.0"
+maplit = "1.0.2"
 
 # serialisation
 serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "1.0.64", optional = true }
+
+# states/outputs recorders
+csv = "1.1.6"
+
+# scenario time
+chrono = "0.4.19"
+
+# PRNG 
 rand = "0.8.3"
 rand_distr = "0.4.0"
 

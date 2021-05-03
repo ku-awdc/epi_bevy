@@ -11,27 +11,25 @@
 //! inspiration/formulas can be found [here](https://www.uio.no/studier/emner/matnat/ifi/IN1900/h18/ressurser/slides/disease_modeling.pdf)
 //! For [SEIR-model](http://indico.ictp.it/event/7960/session/3/contribution/19/material/slides/0.pdf)
 
+use epi_bevy::{
+    between_herd_spread_model, farm_id_to_entity_map::FarmIdEntityMap, prelude::*, sir_spread_model,
+};
 use std::collections::HashMap;
-
 //TODO: make a framework-prelude
 
 use bevy::{
     app::AppExit,
     diagnostic::{DiagnosticsPlugin, LogDiagnosticsPlugin},
     log::LogPlugin,
-    prelude::*,
 };
-mod sir_spread_model;
-use cattle_population::{FarmId, HerdSize};
-use itertools::Itertools;
-use sir_spread_model::{
+// mod sir_spread_model;
+use epi_bevy::between_herd_spread_model::trace_between_herd_infection_events;
+use epi_bevy::cattle_population::{FarmId, HerdSize};
+use epi_bevy::scenario_time::ScenarioTime;
+use epi_bevy::sir_spread_model::{
     DiseaseCompartments, DiseaseParameters as WithinHerdDiseaseParameters, Infected, Susceptible,
 };
-
-use crate::between_herd_spread_model::trace_between_herd_infection_events;
-mod between_herd_spread_model;
-mod between_herd_spread_model_record;
-mod cattle_population;
+use itertools::Itertools;
 
 /// All the parameters for setting up a scenario-run.
 #[derive(Debug)]
@@ -47,22 +45,24 @@ pub struct ScenarioConfiguration {
     max_repetitions: u64,
 }
 
-/// Scenario ticks
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, derive_more::Display)]
-pub struct ScenarioTick(u64);
+// /// Scenario ticks
+// #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, derive_more::Display)]
+// pub struct ScenarioTick(u64);
+// type ScenarioTick = ScenarioTime;
 
-impl ScenarioTick {
-    pub fn update(&mut self) {
-        self.0 = self
-            .0
-            .checked_add(1)
-            .expect("ran out of time ticks to give")
-    }
-}
+// impl ScenarioTick {
+//     pub fn update(&mut self) {
+//         self.0 = self
+//             .0
+//             .checked_add(1)
+//             .expect("ran out of time ticks to give")
+//     }
+// }
 
 /// Update scenario ticks by one.
-fn update_scenario_tick(mut scenario_tick: ResMut<ScenarioTick>) {
-    scenario_tick.update();
+fn update_scenario_tick(mut scenario_tick: ResMut<ScenarioTime>) {
+    scenario_tick.update_time(1);
+    // info!("{:?}", *scenario_tick);
 }
 
 /// Defining stages for seeding the population and the infection.
@@ -89,6 +89,13 @@ fn main() {
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 
+    //TODO: Add a CSV plugin
+    // - [ ] Hide the CSV behind a mutex.
+    // - [ ] Write all components of a specific entites (e.g. [CattleFarm])
+    //       to a CSV file
+    // - [ ] Save every other scenario / physical time.
+    // - [ ] Save also in other modules (e.g. between-herd spread & a regulators).
+
     /// Used to fuse the chained systems, such that one doesn't get a compilation
     /// error even though the result of the last system isn't used.
     ///
@@ -98,15 +105,17 @@ fn main() {
     /// Author: TheRuwuMeatball
     pub fn dispose<T>(_: In<T>) {}
 
-    let scenario_app = App::build()
+    let mut scenario_app = App::build();
+    scenario_app
         .add_plugins(MinimalPlugins)
         // .add_plugins(DefaultPlugins)
         .add_plugin(LogPlugin)
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(DiagnosticsPlugin)
         .insert_resource(StdRng::seed_from_u64(20210426))
-        .insert_resource(ScenarioTick(0))
-        .add_system(update_scenario_tick.system())
+        // .insert_resource(ScenarioTick(0))
+        .insert_resource(ScenarioTime::new(1, 10))
+        .add_system(update_scenario_tick.system().before(Processes::Disease))
         .insert_resource(ScenarioConfiguration {
             total_herds: 2,
             herd_sizes: vec![140, 90],
@@ -120,12 +129,13 @@ fn main() {
         .insert_resource(WithinHerdDiseaseParameters::new(0.03, 0.01))
         .insert_resource(between_herd_spread_model::ContactRate::new(0.095))
         // .insert_resource(ContactRate::new(0.0))
+        .add_startup_system(epi_bevy::cattle_farm_recorder::setup_cattle_farm_recorder.system())
         .add_startup_stage(Seed::Population, SystemStage::parallel())
         .add_startup_stage_after(Seed::Population, Seed::Infection, SystemStage::parallel())
         .add_startup_system_to_stage(Seed::Population, seed_cattle_population.system())
         .add_startup_system_to_stage(
             Seed::Infection,
-            sir_spread_model::seed_infection_random.system(),
+            epi_bevy::sir_spread_model::seed_infection_random.system(),
         )
         .add_startup_stage_after(Seed::Infection, Seed::Contacts, SystemStage::parallel())
         .add_startup_system_to_stage(
@@ -136,24 +146,30 @@ fn main() {
         .add_system_set(
             SystemSet::new()
                 .label(Processes::Disease)
-                .with_system(sir_spread_model::update_disease_compartments.system())
+                .with_system(epi_bevy::sir_spread_model::update_disease_compartments.system())
                 .with_system(
                     between_herd_spread_model::update_between_herd_spread_model
                         .system()
                         .chain(trace_between_herd_infection_events.system()),
                 ),
         )
-        //TODO: add a label on thedisease stuff, and run this next stuff
-        // after that
-        // between-herd disease record
         .add_system_set(
             SystemSet::new()
                 .label(Processes::Recording)
                 .after(Processes::Disease)
                 .with_system(
-                    between_herd_spread_model_record::record_total_infected_farms.system(),
+                    epi_bevy::between_herd_spread_model_record::record_total_infected_farms.system(),
                 ),
         )
+        //TODO: Add a regulators system set! (and finish it)
+        .add_system_set(SystemSet::new().label(Processes::Regulators))
+
+        .add_system_set(
+            SystemSet::new()
+            .with_run_criteria(epi_bevy::scenario_intervals::run_yearly.system())
+            .with_system(epi_bevy::cattle_farm_recorder::record_cattle_farm_components.system())
+    )
+
         // .add_system_to_stage(CoreStage::Update, examine_population.system())
         // TODO: add recorder
         // FIXME: this doesn't work;
@@ -171,9 +187,9 @@ fn main() {
         // TODO: stop if no-one is infected (or max timesteps has been reached)
         // .add_system(print_population_disease_states.system())
         .add_system(terminate_if_outbreak_is_over.system())
-        // .insert_resource(ReportExecutionOrderAmbiguities) // requires [LogPlugin]
+        .insert_resource(bevy::ecs::schedule::ReportExecutionOrderAmbiguities) // requires [LogPlugin]
         ;
-    
+
     scenario_app.run();
 
     info!("Finished simulation.");
@@ -182,7 +198,7 @@ fn main() {
 /// Printing the disease states whenever invoked. These disease states corresponds
 /// to [DiseaseCompartments].
 fn print_population_disease_states(
-    tick: Res<ScenarioTick>,
+    tick: Res<ScenarioTime>,
     query: Query<(&Infected, &Susceptible)>,
     mut event_reader: EventReader<AppExit>,
 ) {
@@ -192,19 +208,12 @@ fn print_population_disease_states(
         println!(
             "{} =>  \nTotal infected: {:?}/
                     \nTotal susceptible: {:?}",
-            tick.0,
+            tick.current_time(),
             inf.into_iter().fold1(|x, y| x + y),
             sus.into_iter().fold1(|x, y| x + y),
         );
     }
 }
-
-//TODO: maybe this should implement Default as a panic?
-/// A mapping between the ECS's entity id's for the farms, and the inherent
-/// id numbering that comes from the scenario configuration (input files, etc.)
-#[readonly::make]
-#[derive(Debug, derive_more::Into, derive_more::From)]
-pub struct FarmIdEntityMap(pub HashMap<FarmId, Entity>);
 
 fn seed_cattle_population(
     mut commands: Commands,
@@ -212,7 +221,7 @@ fn seed_cattle_population(
 ) {
     let initial_disease_parameters =
         initial_disease_parameters.expect("no default/initial disease parameters are set.");
-    let cattle_population_bundle = cattle_population::load_ring_population();
+    let cattle_population_bundle = epi_bevy::cattle_population::load_ring_population();
     // FarmId and Entity id has to correspond, thus we add a resource
     // to contain this mapping.
     //TODO: maybe just collect, then find the length, and iterate further then
@@ -238,11 +247,11 @@ fn seed_cattle_population(
 }
 
 fn examine_population(
-    scenario_tick: Res<ScenarioTick>,
+    scenario_tick: Res<ScenarioTime>,
     query: Query<(&HerdSize, &Susceptible, &Infected)>,
     // query: Query<(&HerdSize), WithBundle<CattleFarmBundle>>,
 ) {
-    dbg!(scenario_tick.0);
+    dbg!(scenario_tick.current_time());
     query.iter().take(2).for_each(|x| {
         dbg!(x);
     });
@@ -266,12 +275,16 @@ fn log_every_half_second(
         &sir_spread_model::Infected,
         &sir_spread_model::Recovered,
     )>,
-    scenario_tick: Res<ScenarioTick>,
+    scenario_tick: Res<ScenarioTime>,
 ) {
     for (farm_id, susceptible, infected, recovered) in query.iter() {
         info!(
             "{} => {}: {:>9.3}, {:>9.3}, {:>9.3}",
-            scenario_tick.0, farm_id, susceptible.0, infected.0, recovered.0
+            scenario_tick.current_time(),
+            farm_id,
+            susceptible.0,
+            infected.0,
+            recovered.0
         );
     }
 }
@@ -288,12 +301,16 @@ fn log_changes_in_infected(
         // notice this query in comparison to [log_every_half_second]
         Changed<sir_spread_model::Infected>,
     >,
-    scenario_tick: Res<ScenarioTick>,
+    scenario_tick: Res<ScenarioTime>,
 ) {
     for (farm_id, susceptible, infected, recovered) in query.iter() {
         println!(
             "({}, {}) => {:>9.3}, {:>9.3}, {:>9.3}",
-            scenario_tick.0, farm_id.0, susceptible.0, infected.0, recovered.0
+            scenario_tick.current_time(),
+            farm_id.0,
+            susceptible.0,
+            infected.0,
+            recovered.0
         );
     }
 }
@@ -303,7 +320,7 @@ fn terminate_if_outbreak_is_over(
     scenario_configuration: Res<ScenarioConfiguration>,
     query: Query<&sir_spread_model::Infected, With<sir_spread_model::Infected>>,
     mut event_writer: EventWriter<AppExit>,
-    tick: Res<ScenarioTick>,
+    tick: Res<ScenarioTime>,
 ) {
     let any_active_infection = query
         .iter()
@@ -311,15 +328,16 @@ fn terminate_if_outbreak_is_over(
         .any(|x| x.0 != 0);
     if
     //don't stop if minimum timesteps hasn't elapsed yet
-    (scenario_configuration.min_timesteps <= tick.0)
+    (scenario_configuration.min_timesteps <= tick.current_time())
         & (
             //stop if there are no more active infections
             (!any_active_infection) ||
     // stop if max timesteps have been reached
-    scenario_configuration.max_timesteps == tick.0
+    scenario_configuration.max_timesteps == tick.current_time()
         )
+        || tick.ended()
     {
-        info!("Terminated at tick: {}", tick.0);
+        info!("Terminated at tick: {}", tick.current_time());
         event_writer.send(AppExit);
     }
 }

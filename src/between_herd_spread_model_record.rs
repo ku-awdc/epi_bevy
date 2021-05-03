@@ -12,18 +12,18 @@ use std::collections::{BTreeMap};
 use bevy::prelude::*;
 use bevy::{ecs::system::SystemParam, utils::HashSet};
 
-use crate::{sir_spread_model::Infected, ScenarioTick};
+use crate::{scenario_time::ScenarioTime, sir_spread_model::Infected};
 
 //TODO: Add `Debug` after it is added to `Bevy`.
 
 #[derive(SystemParam)]
 pub struct Recorder<'a> {
     previously_active_infections: Local<'a, HashSet<Entity>>,
-    total_infected_farms: Local<'a, BTreeMap<ScenarioTick, usize>>,
+    total_infected_farms: Local<'a, BTreeMap<ScenarioTime, usize>>,
 }
 pub fn record_total_infected_farms(
     mut recorder: Recorder,
-    scenario_tick: Res<ScenarioTick>,
+    scenario_tick: Res<ScenarioTime>,
     query: Query<(Entity, &Infected)>,
 ) {
     let actively_infected_farms: HashSet<_> = query

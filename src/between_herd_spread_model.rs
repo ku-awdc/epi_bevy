@@ -14,8 +14,9 @@ use rand::prelude::*;
 
 use crate::{
     cattle_population::{AdjacentFarms, CattleFarm, FarmId, HerdSize},
+    farm_id_to_entity_map::FarmIdEntityMap,
+    scenario_time::ScenarioTime,
     sir_spread_model::{Infected, Susceptible},
-    FarmIdEntityMap, ScenarioTick,
 };
 
 #[readonly::make]
@@ -74,7 +75,7 @@ pub struct BetweenHerdSpreadModel<'a> {
 pub fn update_between_herd_spread_model(
     mut model: BetweenHerdSpreadModel,
     mut rng: ResMut<StdRng>,
-    scenario_tick: Res<ScenarioTick>,
+    scenario_tick: Res<ScenarioTime>,
     farm_map: Res<FarmIdEntityMap>,
 ) -> Option<InfectionEvents> {
     // determine from farms
@@ -201,7 +202,7 @@ pub fn update_between_herd_spread_model(
 
 pub struct InfectionEvents {
     /// Scenario time for the infection events
-    scenario_tick: ScenarioTick,
+    scenario_tick: ScenarioTime,
     /// Infection events are put out in batches
     /// and they can be grouped according to them.
     batch_id: usize,
@@ -220,7 +221,7 @@ pub fn trace_between_herd_infection_events(In(events): In<Option<InfectionEvents
         } = events;
         info!("Between-herd spread events");
         info!("Batch id: {}", batch_id);
-        info!("Time: {}", scenario_tick.0);
+        info!("Time: {}", scenario_tick.current_time());
         // info!("{:#?}", events);
         for (origin, target, _) in events {
             info!("{} -> {}", origin, target)

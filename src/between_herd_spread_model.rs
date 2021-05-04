@@ -29,7 +29,11 @@ impl ContactRate {
     }
 }
 
-/// Add this to startup.
+/// Here we add the contact rate to each farm, as to be able to change it 
+/// on a pr. farm basis later on.
+/// 
+/// Add this to a startup system. Preferably after [CattleFarm]-entites has
+/// been added, otherwise this query is invalid.
 pub fn setup_between_herd_spread_model(
     mut commands: Commands,
     initial_contact_rate: Option<Res<ContactRate>>,

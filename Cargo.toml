@@ -21,6 +21,10 @@ itertools = "0.10.0"
 readonly = "0.2.0"
 maplit = "1.0.2"
 
+# error-handling
+anyhow = "1.0.40"
+thiserror = "1.0.24"
+
 # serialisation
 serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "1.0.64", optional = true }

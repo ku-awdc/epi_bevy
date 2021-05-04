@@ -14,3 +14,5 @@ pub mod cattle_population;
 pub mod scenario_intervals;
 pub mod scenario_time;
 pub mod sir_spread_model;
+pub mod regulator_passive_surveillance;
+pub mod parameters;

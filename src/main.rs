@@ -11,10 +11,8 @@
 //! inspiration/formulas can be found [here](https://www.uio.no/studier/emner/matnat/ifi/IN1900/h18/ressurser/slides/disease_modeling.pdf)
 //! For [SEIR-model](http://indico.ictp.it/event/7960/session/3/contribution/19/material/slides/0.pdf)
 
-use epi_bevy::{
-    between_herd_spread_model, farm_id_to_entity_map::FarmIdEntityMap, prelude::*, sir_spread_model,
-};
-use std::collections::HashMap;
+use epi_bevy::{between_herd_spread_model, farm_id_to_entity_map::FarmIdEntityMap, parameters::{Probability, Rate}, prelude::*, regulator_passive_surveillance::{DetectionRatePerAnimal, DetectionRatePerFarm}, sir_spread_model};
+use std::{collections::HashMap, convert::TryFrom};
 
 use bevy::{
     app::{AppExit, ScheduleRunnerPlugin},
@@ -97,9 +95,9 @@ fn main() {
         })
         .insert_resource(bevy::ecs::schedule::ReportExecutionOrderAmbiguities)
         .add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(DiagnosticsPlugin)
+        .add_plugin(DiagnosticsPlugin::default())
         .add_plugin(ScheduleRunnerPlugin::default())
-        .add_plugin(LogPlugin)
+        .add_plugin(LogPlugin::default())
         .add_plugins(MinimalPlugins)
         .insert_resource(StdRng::seed_from_u64(20210426))
         // .insert_resource(ScenarioTick(0))
@@ -116,6 +114,8 @@ fn main() {
         // .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
         .insert_resource(WithinHerdDiseaseParameters::new(0.03, 0.01))
         .insert_resource(between_herd_spread_model::ContactRate::new(0.095))
+        .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.5).unwrap()).unwrap()))
+        .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.01).unwrap()).unwrap()))
         // .insert_resource(ContactRate::new(0.0))
         .add_startup_system(epi_bevy::cattle_farm_recorder::setup_cattle_farm_recorder.system())
         .add_startup_system(epi_bevy::between_herd_spread_model_record::setup_between_herd_infection_events_recording.system())
@@ -131,6 +131,7 @@ fn main() {
             Seed::Contacts,
             between_herd_spread_model::setup_between_herd_spread_model.system(),
         )
+        .add_startup_system_to_stage(Seed::Contacts, epi_bevy::regulator_passive_surveillance::setup_passive_surveillance.system())
         .add_system(update_scenario_tick.system().before(Processes::Disease))
         // TODO: Add disease spread stage
         .add_system_set(
@@ -154,7 +155,9 @@ fn main() {
                 ),
         )
         //TODO: Add a regulators system set! (and finish it)
-        .add_system_set(SystemSet::new().label(Processes::Regulators))
+        .add_system_set(SystemSet::new()
+            .with_system(epi_bevy::regulator_passive_surveillance::regulator_passive_surveillance.system())
+            .label(Processes::Regulators))
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(epi_bevy::scenario_intervals::run_yearly.system())

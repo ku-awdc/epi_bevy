@@ -18,7 +18,7 @@ use crate::{scenario_time::ScenarioTime, sir_spread_model::Infected};
 #[derive(SystemParam)]
 pub struct Recorder<'a> {
     previously_active_infections: Local<'a, HashSet<Entity>>,
-    total_infected_farms: Local<'a, BTreeMap<ScenarioTime, usize>>,
+    total_infected_farms: Local<'a, BTreeMap<crate::scenario_time::Time, usize>>,
 }
 pub fn record_total_infected_farms(
     mut recorder: Recorder,
@@ -48,7 +48,7 @@ pub fn record_total_infected_farms(
 
         recorder
             .total_infected_farms
-            .insert(*scenario_tick, total_infected_farms);
+            .insert(scenario_tick.current_time(), total_infected_farms);
         info!("Total infected farms: {}", total_infected_farms);
     }
 }

@@ -8,7 +8,7 @@ use crate::prelude::*;
 #[derive(derive_more::From)]
 pub struct BetweenHerdInfectionEventsRecorder(Writer<File>);
 
-/// This is coupled with system [record_cattle_farm_components].
+/// This is coupled with system [record_between_herd_infection_events].
 pub fn setup_between_herd_infection_events_recording(mut commands: Commands) {
     //TODO: determine an appropriate buffer capacity
     let buffer_capacity_in_bytes = 100_000_000; // 100 mb.
@@ -30,7 +30,8 @@ pub fn setup_between_herd_infection_events_recording(mut commands: Commands) {
     let mut csv_writer = csv::WriterBuilder::new()
         .has_headers(false)
         .buffer_capacity(buffer_capacity_in_bytes)
-        .flexible(true) // change to `false`
+        .flexible(false)
+        .delimiter(b';') // change to `false`
         .from_writer(wtr);
     csv_writer.write_record(&[
         "scenario_tick",
@@ -38,10 +39,12 @@ pub fn setup_between_herd_infection_events_recording(mut commands: Commands) {
         "origin_farm_id",
         "target_farm_id",
         "new_infections",
-    ]);
+    ]).unwrap();
 
     commands.insert_resource(BetweenHerdInfectionEventsRecorder::from(csv_writer));
 }
+
+/// The saved fields must correspond to [setup_between_herd_infection_events_recording]
 pub fn record_between_herd_infection_events(
     In(events): In<Option<InfectionEvents>>,
     mut csv_file: ResMut<BetweenHerdInfectionEventsRecorder>,

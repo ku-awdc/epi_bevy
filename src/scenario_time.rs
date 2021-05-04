@@ -27,7 +27,7 @@ pub const DAYS_IN_A_WEEK: Time = 7;
 #[readonly::make]
 // #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq)]
 pub struct ScenarioTime {
     start_time: Time,
     end_time: Option<Time>,

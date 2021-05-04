@@ -33,9 +33,18 @@ pub fn setup_cattle_farm_recorder(mut commands: Commands) {
     let mut csv_writer = csv::WriterBuilder::new()
         .has_headers(false)
         .buffer_capacity(buffer_capacity_in_bytes)
-        .flexible(true) // change to `false`
+        .flexible(false) // change to `false`
+        .delimiter(b';')
         .from_writer(wtr);
-    csv_writer.write_record(&["farm_id", "susceptible", "infected", "recovered"]);
+    csv_writer
+        .write_record(&[
+            "scenario_time",
+            "farm_id",
+            "susceptible",
+            "infected",
+            "recovered",
+        ])
+        .unwrap();
 
     commands.insert_resource(CattleFarmsCSVRecorder::from(csv_writer));
 }

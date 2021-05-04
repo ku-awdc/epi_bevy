@@ -29,9 +29,9 @@ impl ContactRate {
     }
 }
 
-/// Here we add the contact rate to each farm, as to be able to change it 
+/// Here we add the contact rate to each farm, as to be able to change it
 /// on a pr. farm basis later on.
-/// 
+///
 /// Add this to a startup system. Preferably after [CattleFarm]-entites has
 /// been added, otherwise this query is invalid.
 pub fn setup_between_herd_spread_model(
@@ -203,7 +203,6 @@ pub fn update_between_herd_spread_model(
 
 //TODO: Maybe this should reside in its own module, as it is generally unrelated
 // to the actual exectution of the between-herd spread module.
-
 
 // #[readonly::make]
 #[derive(Debug, Clone)]

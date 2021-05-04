@@ -105,6 +105,6 @@ impl Probability {
 //         todo!()
 //         // std::array::IntoIter::new(rates)
 //         //     .map_into::<Probability>()
-            
+
 //     }
 // }

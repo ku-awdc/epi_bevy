@@ -1,4 +1,8 @@
-use bevy::app::ScheduleRunnerPlugin;
+use bevy::{
+    app::{AppExit, ScheduleRunnerPlugin},
+    diagnostic::{DiagnosticsPlugin, LogDiagnosticsPlugin},
+    log::LogPlugin,
+};
 use epi_bevy::prelude::*;
 use epi_bevy::scenario_time::ScenarioTime;
 
@@ -10,9 +14,9 @@ fn main() {
         })
         .insert_resource(bevy::ecs::schedule::ReportExecutionOrderAmbiguities)
         .add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(DiagnosticsPlugin)
+        .add_plugin(DiagnosticsPlugin::default())
         .add_plugin(ScheduleRunnerPlugin::default())
-        .add_plugin(LogPlugin)
+        .add_plugin(LogPlugin::default())
         .add_plugins(MinimalPlugins)
         .insert_resource(ScenarioTime::new(1, 10))
         .add_system_set(

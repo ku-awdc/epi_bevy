@@ -30,10 +30,9 @@ pub struct DetectionRatePerAnimal(pub crate::parameters::Rate);
 pub struct DetectionRatePerFarm(pub crate::parameters::Rate);
 
 // #[derive(SystemParam)]
-pub struct PassiveRegulator {
-    // detection_rate_per_farm: Res<'a, DetectionRatePerFarm>,
-// detection_rate_per_animal: Res<'a, DetectionRatePerAnimal>,
-}
+pub struct PassiveRegulator {}
+
+//TODO: this relies on [CattleFarm] being part of the entity.
 
 /// Here we add the detection rate to each farm, as to be able to change it
 /// on a pr. farm basis later on.
@@ -72,20 +71,19 @@ pub fn regulator_passive_surveillance(
     mut rng: ResMut<StdRng>,
 ) {
     query.for_each_mut(|(mut infected, mut susceptible, dfarm, danimal)| {
-
-        // dbg!(infected.0, dfarm.0.0);
-        if infected.0 > 0 && rng.gen_bool(
-            Probability::try_from(Rate::new(infected.0 as f64 * (dfarm.0).0).unwrap())
-                .map(|x| x.0)
-                .unwrap(),
-        ) {
+        if infected.0 > 0
+            && rng.gen_bool(
+                Probability::try_from(Rate::new(infected.0 as f64 * (dfarm.0).0).unwrap())
+                    .map(|x| x.0)
+                    .unwrap(),
+            )
+        {
             // detected infection now to remove animals
             let delta = Binomial::new(
                 infected.0 as _,
-                Probability::try_from(danimal.0)
-                    .map(|x| x.0)
-                    .unwrap(),
-            ).unwrap();
+                Probability::try_from(danimal.0).map(|x| x.0).unwrap(),
+            )
+            .unwrap();
             let delta = delta.sample(&mut *rng) as usize;
             infected.0 -= delta;
             susceptible.0 += delta;

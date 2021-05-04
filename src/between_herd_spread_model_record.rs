@@ -33,13 +33,15 @@ pub fn setup_between_herd_infection_events_recording(mut commands: Commands) {
         .flexible(false)
         .delimiter(b';') // change to `false`
         .from_writer(wtr);
-    csv_writer.write_record(&[
-        "scenario_tick",
-        "batch_id",
-        "origin_farm_id",
-        "target_farm_id",
-        "new_infections",
-    ]).unwrap();
+    csv_writer
+        .write_record(&[
+            "scenario_tick",
+            "batch_id",
+            "origin_farm_id",
+            "target_farm_id",
+            "new_infections",
+        ])
+        .unwrap();
 
     commands.insert_resource(BetweenHerdInfectionEventsRecorder::from(csv_writer));
 }

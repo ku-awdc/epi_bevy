@@ -15,10 +15,9 @@ use epi_bevy::{
     between_herd_spread_model, farm_id_to_entity_map::FarmIdEntityMap, prelude::*, sir_spread_model,
 };
 use std::collections::HashMap;
-//TODO: make a framework-prelude
 
 use bevy::{
-    app::AppExit,
+    app::{AppExit, ScheduleRunnerPlugin},
     diagnostic::{DiagnosticsPlugin, LogDiagnosticsPlugin},
     log::LogPlugin,
 };
@@ -35,29 +34,15 @@ use itertools::Itertools;
 #[derive(Debug)]
 pub struct ScenarioConfiguration {
     /// Total number of herds in the scenario
-    total_herds: usize,
+    // total_herds: usize,
     /// Herd sizes
-    herd_sizes: Vec<usize>,
+    // herd_sizes: Vec<usize>,
     /// Fail-safe for terminating the scenario.
     max_timesteps: u64,
     min_timesteps: u64,
     /// Alias: Iterations.
     max_repetitions: u64,
 }
-
-// /// Scenario ticks
-// #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, derive_more::Display)]
-// pub struct ScenarioTick(u64);
-// type ScenarioTick = ScenarioTime;
-
-// impl ScenarioTick {
-//     pub fn update(&mut self) {
-//         self.0 = self
-//             .0
-//             .checked_add(1)
-//             .expect("ran out of time ticks to give")
-//     }
-// }
 
 /// Update scenario ticks by one.
 fn update_scenario_tick(mut scenario_tick: ResMut<ScenarioTime>) {
@@ -105,23 +90,26 @@ fn main() {
     /// Author: TheRuwuMeatball
     pub fn dispose<T>(_: In<T>) {}
 
-    let mut scenario_app = App::build();
-    scenario_app
-        .add_plugins(MinimalPlugins)
-        // .add_plugins(DefaultPlugins)
-        .add_plugin(LogPlugin)
+    App::build()
+        .insert_resource(bevy::log::LogSettings {
+            level: bevy::log::Level::DEBUG,
+            ..Default::default()
+        })
+        .insert_resource(bevy::ecs::schedule::ReportExecutionOrderAmbiguities)
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(DiagnosticsPlugin)
+        .add_plugin(ScheduleRunnerPlugin::default())
+        .add_plugin(LogPlugin)
+        .add_plugins(MinimalPlugins)
         .insert_resource(StdRng::seed_from_u64(20210426))
         // .insert_resource(ScenarioTick(0))
-        .insert_resource(ScenarioTime::new(1, 10))
-        .add_system(update_scenario_tick.system().before(Processes::Disease))
+        .insert_resource(ScenarioTime::new(1, None))
         .insert_resource(ScenarioConfiguration {
-            total_herds: 2,
-            herd_sizes: vec![140, 90],
             // max_timesteps: usize::MAX(),
+            // FIXME: make these part of the [ScenarioTime] resource
             min_timesteps: 3,
-            max_timesteps: 1_000_000,
+            max_timesteps: 10_000,
+            //FIXME: this is currently unused
             max_repetitions: 2,
         })
         // .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
@@ -142,6 +130,7 @@ fn main() {
             Seed::Contacts,
             between_herd_spread_model::setup_between_herd_spread_model.system(),
         )
+        .add_system(update_scenario_tick.system().before(Processes::Disease))
         // TODO: Add disease spread stage
         .add_system_set(
             SystemSet::new()
@@ -158,18 +147,19 @@ fn main() {
                 .label(Processes::Recording)
                 .after(Processes::Disease)
                 .with_system(
-                    epi_bevy::between_herd_spread_model_record::record_total_infected_farms.system(),
+                    epi_bevy::between_herd_spread_model_record::record_total_infected_farms
+                        .system(),
                 ),
         )
         //TODO: Add a regulators system set! (and finish it)
         .add_system_set(SystemSet::new().label(Processes::Regulators))
-
         .add_system_set(
             SystemSet::new()
-            .with_run_criteria(epi_bevy::scenario_intervals::run_yearly.system())
-            .with_system(epi_bevy::cattle_farm_recorder::record_cattle_farm_components.system())
-    )
-
+                .with_run_criteria(epi_bevy::scenario_intervals::run_yearly.system())
+                .with_system(
+                    epi_bevy::cattle_farm_recorder::record_cattle_farm_components.system(),
+                ),
+        )
         // .add_system_to_stage(CoreStage::Update, examine_population.system())
         // TODO: add recorder
         // FIXME: this doesn't work;
@@ -187,10 +177,7 @@ fn main() {
         // TODO: stop if no-one is infected (or max timesteps has been reached)
         // .add_system(print_population_disease_states.system())
         .add_system(terminate_if_outbreak_is_over.system())
-        .insert_resource(bevy::ecs::schedule::ReportExecutionOrderAmbiguities) // requires [LogPlugin]
-        ;
-
-    scenario_app.run();
+        .run();
 
     info!("Finished simulation.");
 }
@@ -335,7 +322,9 @@ fn terminate_if_outbreak_is_over(
     // stop if max timesteps have been reached
     scenario_configuration.max_timesteps == tick.current_time()
         )
-        || tick.ended()
+    // || tick.ended()
+    //TODO: Add the case where `tick.ended()` alone as to specifically
+    // inform the runner that the convergence criteria was not met.
     {
         info!("Terminated at tick: {}", tick.current_time());
         event_writer.send(AppExit);

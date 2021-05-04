@@ -1,13 +1,12 @@
 ///
 /// The [record_total_infected_farms] is very ineffective, due to having to
-/// query every farm for its disease state, in order to determine if 
+/// query every farm for its disease state, in order to determine if
 /// these are new outbreaks, or just old ones that are progressing.
-/// 
+///
 /// - [ ] However, from here we cannot have a system that records between-herd
 /// incidence outside of the between-herd spread model...
-/// 
-
-use std::collections::{BTreeMap};
+///
+use std::collections::BTreeMap;
 
 use bevy::prelude::*;
 use bevy::{ecs::system::SystemParam, utils::HashSet};

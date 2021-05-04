@@ -4,7 +4,7 @@
 //!
 
 #[cfg(feature = "serialize")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// Scenario time ticks in days
 type Time = u64;

@@ -1,11 +1,6 @@
 pub mod prelude {
 
-    pub use bevy::{
-        app::AppExit,
-        diagnostic::{DiagnosticsPlugin, LogDiagnosticsPlugin},
-        log::LogPlugin,
-        prelude::*,
-    };
+    pub use bevy::prelude::*;
     // use itertools::Itertools;
 }
 

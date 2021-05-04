@@ -1,54 +1,63 @@
-///
-/// The [record_total_infected_farms] is very ineffective, due to having to
-/// query every farm for its disease state, in order to determine if
-/// these are new outbreaks, or just old ones that are progressing.
-///
-/// - [ ] However, from here we cannot have a system that records between-herd
-/// incidence outside of the between-herd spread model...
-///
-use std::collections::BTreeMap;
+use std::fs::File;
 
-use bevy::prelude::*;
-use bevy::{ecs::system::SystemParam, utils::HashSet};
+use csv::Writer;
 
-use crate::{scenario_time::ScenarioTime, sir_spread_model::Infected};
+use crate::between_herd_spread_model::InfectionEvents;
+use crate::prelude::*;
 
-//TODO: Add `Debug` after it is added to `Bevy`.
+#[derive(derive_more::From)]
+pub struct BetweenHerdInfectionEventsRecorder(Writer<File>);
 
-#[derive(SystemParam)]
-pub struct Recorder<'a> {
-    previously_active_infections: Local<'a, HashSet<Entity>>,
-    total_infected_farms: Local<'a, BTreeMap<ScenarioTime, usize>>,
+/// This is coupled with system [record_cattle_farm_components].
+pub fn setup_between_herd_infection_events_recording(mut commands: Commands) {
+    //TODO: determine an appropriate buffer capacity
+    let buffer_capacity_in_bytes = 100_000_000; // 100 mb.
+                                                // create the path (not necessarily the file)
+                                                //TODO: put this somewhere else
+    let path_to_csv_file: std::path::PathBuf = "outputs/between_herd_infection_events.csv".into();
+    let mut path_to_directory = path_to_csv_file.clone();
+    path_to_directory.pop();
+    std::fs::create_dir_all(path_to_directory).unwrap();
+
+    let wtr = std::fs::OpenOptions::new()
+        // .append(false)
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(path_to_csv_file)
+        .unwrap();
+
+    let mut csv_writer = csv::WriterBuilder::new()
+        .has_headers(false)
+        .buffer_capacity(buffer_capacity_in_bytes)
+        .flexible(true) // change to `false`
+        .from_writer(wtr);
+    csv_writer.write_record(&[
+        "scenario_tick",
+        "batch_id",
+        "origin_farm_id",
+        "target_farm_id",
+        "new_infections",
+    ]);
+
+    commands.insert_resource(BetweenHerdInfectionEventsRecorder::from(csv_writer));
 }
-pub fn record_total_infected_farms(
-    mut recorder: Recorder,
-    scenario_tick: Res<ScenarioTime>,
-    query: Query<(Entity, &Infected)>,
+pub fn record_between_herd_infection_events(
+    In(events): In<Option<InfectionEvents>>,
+    mut csv_file: ResMut<BetweenHerdInfectionEventsRecorder>,
+    // scenario_time: Res<ScenarioTime>,
 ) {
-    let actively_infected_farms: HashSet<_> = query
-        .iter()
-        .filter(|x| {
-            let infected: &Infected = x.1;
-            infected.0 > 1
+    if let Some(events) = events {
+        let InfectionEvents {
+            scenario_tick,
+            batch_id,
+            events_values,
+        } = events;
+
+        events_values.into_iter().for_each(|x| {
+            csv_file.0.serialize((scenario_tick, batch_id, x)).unwrap();
         })
-        .map(|x| x.0)
-        .collect();
-    let tmp = recorder.previously_active_infections.clone();
-    let mut newly_infected_farms = (&actively_infected_farms).difference(&tmp);
-
-    //TODO: update previously infected farms in an "efficient" way.
-    // There must be a way to register these things and see
-    // if that is computationally better than doing this, maybe through
-    // "tag" like components.
-    *recorder.previously_active_infections = actively_infected_farms.clone();
-
-    if newly_infected_farms.next().is_some() {
-        // there are some newly infected farms.
-        let total_infected_farms = actively_infected_farms.len();
-
-        recorder
-            .total_infected_farms
-            .insert(*scenario_tick, total_infected_farms);
-        info!("Total infected farms: {}", total_infected_farms);
+    } else {
+        // no infection events
     }
 }

@@ -118,6 +118,7 @@ fn main() {
         .insert_resource(between_herd_spread_model::ContactRate::new(0.095))
         // .insert_resource(ContactRate::new(0.0))
         .add_startup_system(epi_bevy::cattle_farm_recorder::setup_cattle_farm_recorder.system())
+        .add_startup_system(epi_bevy::between_herd_spread_model_record::setup_between_herd_infection_events_recording.system())
         .add_startup_stage(Seed::Population, SystemStage::parallel())
         .add_startup_stage_after(Seed::Population, Seed::Infection, SystemStage::parallel())
         .add_startup_system_to_stage(Seed::Population, seed_cattle_population.system())
@@ -139,7 +140,8 @@ fn main() {
                 .with_system(
                     between_herd_spread_model::update_between_herd_spread_model
                         .system()
-                        .chain(trace_between_herd_infection_events.system()),
+                        .chain(trace_between_herd_infection_events.system())
+                        .chain(epi_bevy::between_herd_spread_model_record::record_between_herd_infection_events.system()),
                 ),
         )
         .add_system_set(
@@ -147,7 +149,7 @@ fn main() {
                 .label(Processes::Recording)
                 .after(Processes::Disease)
                 .with_system(
-                    epi_bevy::between_herd_spread_model_record::record_total_infected_farms
+                    epi_bevy::population_model_record::record_total_infected_farms
                         .system(),
                 ),
         )

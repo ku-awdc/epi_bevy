@@ -7,7 +7,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Scenario time ticks in days
-type Time = u64;
+pub type Time = u64;
 
 /// Total number of days in a year.
 pub const DAYS_IN_A_YEAR: Time = 364;

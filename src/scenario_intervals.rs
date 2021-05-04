@@ -16,3 +16,12 @@ pub fn run_yearly(scenario_time: Res<ScenarioTime>) -> ShouldRun {
         ShouldRun::No
     }
 }
+
+pub fn run_every_week(scenario_time: Res<ScenarioTime>) -> ShouldRun {
+    if scenario_time.first_day_of_week(None) {
+        // ShouldRun::YesAndCheckAgain
+        ShouldRun::Yes
+    } else {
+        ShouldRun::No
+    }
+}

@@ -11,7 +11,7 @@ use crate::{
 #[derive(derive_more::From)]
 pub struct CattleFarmsCSVRecorder(Writer<File>);
 
-/// This is coupled with system [record_cattle_farm_components]. 
+/// This is coupled with system [record_cattle_farm_components].
 pub fn setup_cattle_farm_recorder(mut commands: Commands) {
     //TODO: determine an appropriate buffer capacity
     let buffer_capacity_in_bytes = 100_000_000; // 100 mb.
@@ -30,11 +30,12 @@ pub fn setup_cattle_farm_recorder(mut commands: Commands) {
         .open(path_to_csv_file)
         .unwrap();
 
-    let csv_writer = csv::WriterBuilder::new()
+    let mut csv_writer = csv::WriterBuilder::new()
         .has_headers(false)
         .buffer_capacity(buffer_capacity_in_bytes)
         .flexible(true) // change to `false`
         .from_writer(wtr);
+    csv_writer.write_record(&["farm_id", "susceptible", "infected", "recovered"]);
 
     commands.insert_resource(CattleFarmsCSVRecorder::from(csv_writer));
 }
@@ -50,7 +51,7 @@ pub fn record_cattle_farm_components(
     query: Query<(&FarmId, &Susceptible, &Infected, &Recovered), With<CattleFarm>>,
 ) {
     // info!("Recorded to csv at {} ", *scenario_time);
-    
+
     query.for_each(|x| {
         csv_file
             .0

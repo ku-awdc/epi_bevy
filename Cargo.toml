@@ -7,8 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy.git", features = ["dynamic"], default-features = false }
+# bevy = { git = "https://github.com/bevyengine/bevy.git", features = ["dynamic"], default-features = false }
 # bevy = { path = "../bevy/", features = ["dynamic"], default-features = false }
+# dynamic is behaving weird on windows
+bevy = { git = "https://github.com/bevyengine/bevy.git", features = ["dynamic"], default-features = false }
 
 # numerical rust
 approx = "0.4.0"

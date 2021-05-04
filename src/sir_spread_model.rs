@@ -1,3 +1,6 @@
+#[cfg(feature = "serialize")]
+use serde::{Deserialize, Serialize};
+
 use bevy::prelude::*;
 use rand::prelude::*;
 
@@ -28,7 +31,9 @@ impl DiseaseParameters {
     derive_more::From,
     derive_more::Add,
     derive_more::AddAssign,
+    derive_more::Display,
 )]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Susceptible(pub usize);
 // #[readonly::make]
 #[derive(
@@ -39,7 +44,9 @@ pub struct Susceptible(pub usize);
     derive_more::From,
     derive_more::Add,
     derive_more::AddAssign,
+    derive_more::Display,
 )]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Infected(pub usize);
 
 impl Infected {
@@ -53,7 +60,8 @@ impl Infected {
 }
 
 #[readonly::make]
-#[derive(Debug, derive_more::Into, derive_more::From)]
+#[derive(Debug, derive_more::Display, derive_more::Into, derive_more::From)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Recovered(pub usize);
 // pub struct Dead(pub usize);
 

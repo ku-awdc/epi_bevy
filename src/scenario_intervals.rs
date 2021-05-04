@@ -1,0 +1,27 @@
+//! There are scenario time and user time.
+//! Some systems are to run after certain processes (e.g. [System])
+//! while others should run every day (default), week, month, year, etc.
+//!
+//!
+
+use bevy::{ecs::schedule::ShouldRun, prelude::*};
+
+use crate::scenario_time::ScenarioTime;
+
+pub fn run_yearly(scenario_time: Res<ScenarioTime>) -> ShouldRun {
+    if scenario_time.first_day_of_the_year() {
+        // ShouldRun::YesAndCheckAgain
+        ShouldRun::Yes
+    } else {
+        ShouldRun::No
+    }
+}
+
+pub fn run_every_week(scenario_time: Res<ScenarioTime>) -> ShouldRun {
+    if scenario_time.first_day_of_week(None) {
+        // ShouldRun::YesAndCheckAgain
+        ShouldRun::Yes
+    } else {
+        ShouldRun::No
+    }
+}

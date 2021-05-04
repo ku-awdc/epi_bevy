@@ -14,8 +14,9 @@ use rand::prelude::*;
 
 use crate::{
     cattle_population::{AdjacentFarms, CattleFarm, FarmId, HerdSize},
+    farm_id_to_entity_map::FarmIdEntityMap,
+    scenario_time::ScenarioTime,
     sir_spread_model::{Infected, Susceptible},
-    FarmIdEntityMap, ScenarioTick,
 };
 
 #[readonly::make]
@@ -74,7 +75,7 @@ pub struct BetweenHerdSpreadModel<'a> {
 pub fn update_between_herd_spread_model(
     mut model: BetweenHerdSpreadModel,
     mut rng: ResMut<StdRng>,
-    scenario_tick: Res<ScenarioTick>,
+    scenario_tick: Res<ScenarioTime>,
     farm_map: Res<FarmIdEntityMap>,
 ) -> Option<InfectionEvents> {
     // determine from farms
@@ -187,9 +188,9 @@ pub fn update_between_herd_spread_model(
 
         //export that new infections events occurred
         Some(InfectionEvents {
-            scenario_tick: *scenario_tick,
+            scenario_tick: scenario_tick.current_time(),
             batch_id: *model.current_batch_id,
-            events: new_infection_events,
+            events_values: new_infection_events,
         })
     } else {
         None
@@ -199,33 +200,40 @@ pub fn update_between_herd_spread_model(
 //TODO: Maybe this should reside in its own module, as it is generally unrelated
 // to the actual exectution of the between-herd spread module.
 
+
+// #[readonly::make]
+#[derive(Debug, Clone)]
 pub struct InfectionEvents {
     /// Scenario time for the infection events
-    scenario_tick: ScenarioTick,
+    pub scenario_tick: crate::scenario_time::Time,
     /// Infection events are put out in batches
     /// and they can be grouped according to them.
-    batch_id: usize,
+    pub batch_id: usize,
     /// An event consists an origin farm `from` and a target farm `to` and
     /// then the number of infectious animals that were introduced to the fold.
-    events: Vec<(FarmId, FarmId, usize)>,
+    pub events_values: Vec<(FarmId, FarmId, usize)>,
 }
 
 /// Prints the between-herd spread events as they come.
-pub fn trace_between_herd_infection_events(In(events): In<Option<InfectionEvents>>) {
-    if let Some(events) = events {
+pub fn trace_between_herd_infection_events(
+    In(events): In<Option<InfectionEvents>>,
+) -> Option<InfectionEvents> {
+    if let Some(infection_events) = events.clone() {
         let InfectionEvents {
             scenario_tick,
             batch_id,
-            events,
-        } = events;
+            events_values,
+        } = infection_events;
         info!("Between-herd spread events");
         info!("Batch id: {}", batch_id);
-        info!("Time: {}", scenario_tick.0);
+        info!("Time: {}", scenario_tick);
         // info!("{:#?}", events);
-        for (origin, target, _) in events {
+        for (origin, target, _) in events_values {
             info!("{} -> {}", origin, target)
         }
+        events
     } else {
         // no events was released now, so what gives?
+        None
     }
 }

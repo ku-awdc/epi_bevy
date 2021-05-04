@@ -23,6 +23,7 @@ serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "1.0.64", optional = true }
 rand = "0.8.3"
 rand_distr = "0.4.0"
+sled = "0.34.6"
 
 [features]
 default = ["serialize"]

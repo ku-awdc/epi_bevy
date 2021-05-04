@@ -6,6 +6,8 @@
 //! - [ ] Add recording through [sled]
 //! - [ ] Add UI that shows progress
 //! - [ ] Add CLI interface
+//! - [ ] Add plotters or something similar
+//! - [ ] Introduce a very large population into the mix. 
 //!
 //!
 //! inspiration/formulas can be found [here](https://www.uio.no/studier/emner/matnat/ifi/IN1900/h18/ressurser/slides/disease_modeling.pdf)
@@ -29,6 +31,8 @@ use sir_spread_model::{
 };
 
 use crate::between_herd_spread_model::trace_between_herd_infection_events;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 mod between_herd_spread_model;
 mod between_herd_spread_model_record;
 mod cattle_population;
@@ -85,9 +89,26 @@ enum Processes {
     Regulators,
 }
 
+
 fn main() {
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
+    
+    let db = sled::Config::new()
+        // .cache_capacity(to) //set to a large number
+        .use_compression(false)
+        .flush_every_ms(Some(1000))
+        .temporary(false)
+        .path("outputs/scenario_output")
+        .open().unwrap();
+
+    // - [ ] Store computationally intense resources in a database, and load
+    //       directly. Maybe benchmark this.
+    // - [ ] write a `sled`-plugin?
+
+    db.insert(b"key", b"value").unwrap();
+    
+    db.flush().unwrap();
+
+    
 
     /// Used to fuse the chained systems, such that one doesn't get a compilation
     /// error even though the result of the last system isn't used.
@@ -98,13 +119,14 @@ fn main() {
     /// Author: TheRuwuMeatball
     pub fn dispose<T>(_: In<T>) {}
 
-    let scenario_app = App::build()
-        .add_plugins(MinimalPlugins)
+    let mut scenario_app = App::build();
+    scenario_app.add_plugins(MinimalPlugins)
         // .add_plugins(DefaultPlugins)
         .add_plugin(LogPlugin)
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(DiagnosticsPlugin)
-        .insert_resource(StdRng::seed_from_u64(20210426))
+        // .insert_resource(StdRng::seed_from_u64(20210426 - 0))
+        .insert_resource(StdRng::seed_from_u64(20210426 - 1))
         .insert_resource(ScenarioTick(0))
         .add_system(update_scenario_tick.system())
         .insert_resource(ScenarioConfiguration {
@@ -173,9 +195,7 @@ fn main() {
         .add_system(terminate_if_outbreak_is_over.system())
         // .insert_resource(ReportExecutionOrderAmbiguities) // requires [LogPlugin]
         ;
-    
     scenario_app.run();
-
     info!("Finished simulation.");
 }
 

@@ -133,8 +133,10 @@ fn main() {
         // them. So is there such a thing as a Bundle of Resources?
         .insert_resource(WithinHerdDiseaseParameters::new(0.03, 0.01))
         .insert_resource(between_herd_spread_model::ContactRate::new(0.095))
-        .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.5).unwrap()).unwrap()))
-        .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.01).unwrap()).unwrap()))
+        // .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.5).unwrap()).unwrap()))
+        // .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.01).unwrap()).unwrap()))
+        .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.0).unwrap()).unwrap()))
+        .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.00).unwrap()).unwrap()))
         // .insert_resource(ContactRate::new(0.0))
         //TODO: Everytime a new module is added to the mix, it needs a new setup
         // procedure to amend the farms with components pertaining to those new systems
@@ -186,7 +188,8 @@ fn main() {
             .label(Processes::Regulators))
         .add_system_set(
             SystemSet::new()
-                .with_run_criteria(epi_bevy::scenario_intervals::run_yearly.system())
+                // .with_run_criteria(epi_bevy::scenario_intervals::run_yearly.system())
+                .with_run_criteria(epi_bevy::scenario_intervals::run_every_week.system())
                 .with_system(
                     epi_bevy::cattle_farm_recorder::record_cattle_farm_components.system(),
                 ),
@@ -206,7 +209,7 @@ fn main() {
         // )
         // TODO: add application loop that displays the current estimates
         // .add_system(print_population_disease_states.system())
-        .add_system(terminate_if_outbreak_is_over.system())
+        .add_system(terminate_if_outbreak_is_over.system().after(Processes::Regulators))
         .run();
 
     info!("Finished simulation.");

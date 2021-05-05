@@ -70,14 +70,14 @@ impl TryFrom<f64> for Probability {
 /// $\lambda = -\log(1-p)$
 impl From<Probability> for Rate {
     fn from(probability: Probability) -> Self {
-        Self((1. - probability.0).ln_1p())
+        Self(-(1. - probability.0).ln())
     }
 }
 
-/// $p=1-\exp(-\lambda)
+/// $p=1-\exp(-\lambda)$
 impl From<Rate> for Probability {
     fn from(rate: Rate) -> Self {
-        Self(rate.0.neg().exp_m1().neg())
+        Self(1. - (-rate.0).exp())
     }
 }
 

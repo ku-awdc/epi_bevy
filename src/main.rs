@@ -36,6 +36,15 @@ use epi_bevy::sir_spread_model::{
 
 mod disease_ecs_diagnostic;
 
+//TODO: make this into a bunddle and add all those "resources" that represent
+// parameters that end up residing in the entities, by using the scenario
+// configuration as the initial value for these.
+//
+// Note: this makes it so that the scenario configuration dictates how all
+// these components look for all farms (initially). They can of course
+// be amended afterwards, but remember, commands are executed at the end
+// of a stage.
+// 
 /// All the parameters for setting up a scenario-run.
 #[derive(Debug)]
 pub struct ScenarioConfiguration {

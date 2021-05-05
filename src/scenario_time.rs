@@ -448,7 +448,7 @@ mod tests {
         );
 
         let mut some_time = ScenarioTime::new(1, 365 + 10);
-        assert_eq!(some_time.first_day_of_the_year(), true);
+        assert!(some_time.first_day_of_the_year());
 
         some_time.update_time(120);
         some_time.update_time(1);

@@ -122,7 +122,6 @@ pub fn update_disease_compartments(
         } as usize;
 
         // newly infected may only be atmost the number of susceptible animals
-        // let delta_infected = delta_infected.min(susceptible.0);
         debug_assert!(delta_infected <= susceptible.0, "cannot infect more animals than there are present.");
         let delta_recovered = recovery_rate * infected.0 as f64;
         // let delta_recovered = delta_recovered.round() as usize;
@@ -133,8 +132,7 @@ pub fn update_disease_compartments(
         } as usize;
 
         // number of recovered may at most be the number of infected
-        // TODO: put an assertion here..
-        // let delta_recovered = delta_recovered.min(infected.0);
+        debug_assert!(delta_recovered <= infected.0, "cannot recover more animals than infected");
 
         susceptible.0 = susceptible.0.saturating_sub(delta_infected);
         infected.0 = if delta_infected < delta_recovered {
@@ -179,7 +177,7 @@ pub fn seed_infection_random(
 }
 
 /// Place one infected individual into the mix.
-pub fn seed_infected_everywhere(query: Query<(&mut Susceptible, &mut Infected)>) {
+pub fn seed_infected_everywhere(mut query: Query<(&mut Susceptible, &mut Infected)>) {
     let mut empty_query = true;
     // currently this infects everyone
     // for between-herd infection, we should just infect one farm.

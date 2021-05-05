@@ -17,7 +17,7 @@ use crate::{
     prelude::*,
     sir_spread_model::{Infected, Susceptible},
 };
-use bevy::ecs::system::SystemParam;
+
 use rand::{prelude::StdRng, Rng};
 use rand_distr::{Binomial, Distribution};
 
@@ -87,7 +87,6 @@ pub fn regulator_passive_surveillance(
             let delta = delta.sample(&mut *rng) as usize;
             infected.0 -= delta;
             susceptible.0 += delta;
-            // dbg!(delta);
         }
     });
 }

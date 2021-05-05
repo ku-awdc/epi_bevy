@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use bevy::prelude::*;
 use rand::prelude::*;
 
+use crate::cattle_population::HerdSize;
+
 #[readonly::make]
 #[derive(Debug, Clone, Copy)]
 pub struct DiseaseParameters {
@@ -91,6 +93,7 @@ impl DiseaseCompartments {
 pub fn update_disease_compartments(
     // scenario_configuration: Res<ScenarioConfiguration>,
     mut query: Query<(
+        &HerdSize,
         &mut Susceptible,
         &mut Infected,
         &mut Recovered,
@@ -98,7 +101,7 @@ pub fn update_disease_compartments(
     )>,
     mut rng: ResMut<StdRng>,
 ) {
-    for (mut susceptible, mut infected, mut recovered, disease_parameters) in query.iter_mut() {
+    for (herd_size, mut susceptible, mut infected, mut recovered, disease_parameters) in query.iter_mut() {
         // dbg!("any");
         let DiseaseParameters {
             infection_rate,
@@ -110,6 +113,7 @@ pub fn update_disease_compartments(
         // and maybe no-one ever get infected, so we need to do something about this..
 
         let delta_infected = infection_rate * (susceptible.0 * infected.0) as f64;
+        let delta_infected = delta_infected / herd_size.0;
         // let delta_infected = delta_infected.round() as usize;
         let delta_infected = if rng.gen_bool(delta_infected.fract()) {
             delta_infected.ceil()
@@ -118,7 +122,8 @@ pub fn update_disease_compartments(
         } as usize;
 
         // newly infected may only be atmost the number of susceptible animals
-        let delta_infected = delta_infected.min(susceptible.0);
+        // let delta_infected = delta_infected.min(susceptible.0);
+        debug_assert!(delta_infected <= susceptible.0, "cannot infect more animals than there are present.");
         let delta_recovered = recovery_rate * infected.0 as f64;
         // let delta_recovered = delta_recovered.round() as usize;
         let delta_recovered = if rng.gen_bool(delta_recovered.fract()) {

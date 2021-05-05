@@ -113,7 +113,7 @@ pub fn update_disease_compartments(
         // and maybe no-one ever get infected, so we need to do something about this..
 
         let delta_infected = infection_rate * (susceptible.0 * infected.0) as f64;
-        let delta_infected = delta_infected / herd_size.0;
+        let delta_infected = delta_infected / herd_size.0 as f64;
         // let delta_infected = delta_infected.round() as usize;
         let delta_infected = if rng.gen_bool(delta_infected.fract()) {
             delta_infected.ceil()
@@ -133,7 +133,8 @@ pub fn update_disease_compartments(
         } as usize;
 
         // number of recovered may at most be the number of infected
-        let delta_recovered = delta_recovered.min(infected.0);
+        // TODO: put an assertion here..
+        // let delta_recovered = delta_recovered.min(infected.0);
 
         susceptible.0 = susceptible.0.saturating_sub(delta_infected);
         infected.0 = if delta_infected < delta_recovered {

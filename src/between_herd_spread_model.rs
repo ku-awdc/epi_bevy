@@ -96,17 +96,17 @@ pub fn update_between_herd_spread_model(
         // first, is an infectious farm going to send out any batches of animals?
         //FIXME: ensure this works for all rates, not only for <= 1.
         // determine if there are animal movements
-        .filter(|(_, _, contact_rate, _, _)| {
-            // .filter(|(farm, )| {
-            let contact_rate: &&ContactRate = contact_rate;
-
-            rng.gen_bool(contact_rate.0)
-        })
         .filter(|info| {
             // .filter(|(farm,)| {
             let infected: Infected = *info.0;
             let infected: Infected = infected;
             infected.0 > 0
+        })
+        .filter(|(_, _, contact_rate, _, _)| {
+            // .filter(|(farm, )| {
+            let contact_rate: &&ContactRate = contact_rate;
+
+            rng.gen_bool(contact_rate.0)
         })
         .map(
             |info: (&Infected, &AdjacentFarms, &ContactRate, &HerdSize, &FarmId)| {

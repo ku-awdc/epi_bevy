@@ -1,3 +1,6 @@
+//! UPDATE: This is ill-conceived and should be replaced by something else
+//! rather soon.
+//! 
 //! Passive surveillance regulator
 //!
 //! Detection happen as 1% x infected
@@ -17,7 +20,7 @@ use crate::{
     prelude::*,
     sir_spread_model::{Infected, Susceptible},
 };
-use bevy::ecs::system::SystemParam;
+
 use rand::{prelude::StdRng, Rng};
 use rand_distr::{Binomial, Distribution};
 
@@ -37,7 +40,7 @@ pub struct PassiveRegulator {}
 /// Here we add the detection rate to each farm, as to be able to change it
 /// on a pr. farm basis later on.
 ///
-/// Add this to a startup system. Preferably after [CattleFarm]-entites has
+/// Add this to a startup system. Preferably after [CattleFarm]-entities has
 /// been added, otherwise this query is invalid.
 pub fn setup_passive_surveillance(
     mut commands: Commands,
@@ -87,7 +90,6 @@ pub fn active_surveillance(
             let delta = delta.sample(&mut *rng) as usize;
             infected.0 -= delta;
             susceptible.0 += delta;
-            // dbg!(delta);
         }
     });
 }

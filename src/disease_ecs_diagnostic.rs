@@ -1,6 +1,6 @@
 use bevy::app::AppExit;
 use epi_bevy::{
-    cattle_population::{FarmId, HerdSize},
+    cattle_population::FarmId,
     prelude::*,
     scenario_time::ScenarioTime,
     sir_spread_model::{self, Infected, Susceptible},
@@ -8,7 +8,7 @@ use epi_bevy::{
 
 /// Printing the disease states whenever invoked. These disease states corresponds
 /// to [DiseaseCompartments].
-fn print_population_disease_states(
+fn print_population_disease_states_at_app_exit(
     tick: Res<ScenarioTime>,
     query: Query<(&Infected, &Susceptible)>,
     mut event_reader: EventReader<AppExit>,
@@ -26,18 +26,10 @@ fn print_population_disease_states(
     }
 }
 
-fn examine_population(
-    scenario_tick: Res<ScenarioTime>,
-    query: Query<(&HerdSize, &Susceptible, &Infected)>,
-    // query: Query<(&HerdSize), WithBundle<CattleFarmBundle>>,
-) {
-    dbg!(scenario_tick.current_time());
-    query.iter().take(2).for_each(|x| {
-        dbg!(x);
-    });
-}
+
 
 /// Print disease states if infected state every half a second;
+#[deprecated(note = "please use run criteria to handle when systems are run.")]
 fn log_every_half_second(
     query: Query<(
         &FarmId,

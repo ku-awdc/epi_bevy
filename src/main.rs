@@ -2,10 +2,21 @@
 //! - [x] Run headless
 //! - [x] Implement SIR model
 //! - [ ] Add repopulation to the model
+//!     Repopulation can happen where every time there isn't a an active change
+//!     in the map, then the compartments gets "scaled back up" so as to revert
+//!     back to nominal animal counts on the farm
 //! - [ ] Add repetitions/iterations to the model
 //! - [ ] Add recording through [sled]
 //! - [ ] Add UI that shows progress
 //! - [ ] Add CLI interface
+//! - [ ] Add a between-herd infection that add a proportion of infected animals
+//!       from one farm onto another.
+//! - [ ] Implement true passive surveillance, which is the true/observed
+//!       prevalence "watcher". Maybe set that to weekly or similar.
+//! 
+//! - [ ] Add the 50% -> {0% infected, or 90% recovered} regulator
+//! - [ ] Ensure that the simulation is "actually" deterministic, when everything
+//!       is set. 
 //!
 //!
 //! inspiration/formulas can be found [here](https://www.uio.no/studier/emner/matnat/ifi/IN1900/h18/ressurser/slides/disease_modeling.pdf)
@@ -26,17 +37,17 @@ use bevy::{
     diagnostic::{DiagnosticsPlugin, LogDiagnosticsPlugin},
     log::LogPlugin,
 };
-// mod sir_spread_model;
+
 use epi_bevy::between_herd_spread_model::print_between_herd_infection_events;
 use epi_bevy::cattle_population::{FarmId, HerdSize};
 use epi_bevy::scenario_time::ScenarioTime;
 use epi_bevy::sir_spread_model::{
-    DiseaseCompartments, DiseaseParameters as WithinHerdDiseaseParameters, Infected, Susceptible,
+    DiseaseCompartments, DiseaseParameters as WithinHerdDiseaseParameters,
 };
 
 mod disease_ecs_diagnostic;
 
-//TODO: make this into a bunddle and add all those "resources" that represent
+//TODO: make this into a bundle and add all those "resources" that represent
 // parameters that end up residing in the entities, by using the scenario
 // configuration as the initial value for these.
 //
@@ -91,7 +102,7 @@ fn main() {
 
     //TODO: Add a CSV plugin
     // - [ ] Hide the CSV behind a mutex.
-    // - [ ] Write all components of a specific entites (e.g. [CattleFarm])
+    // - [ ] Write all components of a specific entities (e.g. [CattleFarm])
     //       to a CSV file
     // - [ ] Save every other scenario / physical time.
     // - [ ] Save also in other modules (e.g. between-herd spread & a regulators).
@@ -102,7 +113,7 @@ fn main() {
     /// As [SystemStage] requires that the system-chain ends with unit-type `()`
     /// we have to use this to fuse the chain.
     ///
-    /// Author: TheRuwuMeatball
+    /// Author: @TheRuwuMeatball
     pub fn dispose<T>(_: In<T>) {}
 
     App::build()
@@ -142,9 +153,9 @@ fn main() {
         // .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.0).unwrap()).unwrap()))
         // .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.00).unwrap()).unwrap()))
         // .insert_resource(ContactRate::new(0.0))
-        //TODO: Everytime a new module is added to the mix, it needs a new setup
+        //TODO: Every time a new module is added to the mix, it needs a new setup
         // procedure to amend the farms with components pertaining to those new systems
-        // they can be regulators, and atleast any other thing that should be
+        // they can be regulators, and at least any other thing that should be
         // extended somehow...
         .add_startup_system(epi_bevy::cattle_farm_recorder::setup_cattle_farm_recorder.system())
         .add_startup_system(epi_bevy::between_herd_spread_model_record::setup_between_herd_infection_events_recording.system())

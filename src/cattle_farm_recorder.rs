@@ -49,8 +49,6 @@ pub fn setup_cattle_farm_recorder(mut commands: Commands) {
     commands.insert_resource(CattleFarmsCSVRecorder::from(csv_writer));
 }
 
-//TODO: Some queries
-
 /// Note that changing the components queried requires an equivalent change
 /// in the setup system i.e. [setup_cattle_farm_recorder]
 pub fn record_cattle_farm_components(

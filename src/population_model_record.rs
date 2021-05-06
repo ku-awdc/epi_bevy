@@ -20,7 +20,7 @@ pub struct Recorder<'a> {
     previously_active_infections: Local<'a, HashSet<Entity>>,
     total_infected_farms: Local<'a, BTreeMap<crate::scenario_time::Time, usize>>,
 }
-pub fn record_total_infected_farms(
+pub fn print_total_infected_farms(
     mut recorder: Recorder,
     scenario_tick: Res<ScenarioTime>,
     query: Query<(Entity, &Infected)>,
@@ -49,6 +49,10 @@ pub fn record_total_infected_farms(
         recorder
             .total_infected_farms
             .insert(scenario_tick.current_time(), total_infected_farms);
-        info!("Total infected farms: {}", total_infected_farms);
+        info!(
+            "{:>5} => Total infected farms: {}",
+            scenario_tick.current_time(),
+            total_infected_farms
+        );
     }
 }

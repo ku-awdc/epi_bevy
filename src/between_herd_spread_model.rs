@@ -218,7 +218,7 @@ pub struct InfectionEvents {
 }
 
 /// Prints the between-herd spread events as they come.
-pub fn trace_between_herd_infection_events(
+pub fn print_between_herd_infection_events(
     In(events): In<Option<InfectionEvents>>,
 ) -> Option<InfectionEvents> {
     if let Some(infection_events) = events.clone() {

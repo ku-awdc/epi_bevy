@@ -16,7 +16,7 @@ use epi_bevy::{
     farm_id_to_entity_map::FarmIdEntityMap,
     parameters::{Probability, Rate},
     prelude::*,
-    regulator_passive_surveillance::{DetectionRatePerAnimal, DetectionRatePerFarm},
+    active_surveillance::{DetectionRatePerAnimal, DetectionRatePerFarm},
     sir_spread_model,
 };
 use std::{collections::HashMap, convert::TryFrom};
@@ -27,7 +27,7 @@ use bevy::{
     log::LogPlugin,
 };
 // mod sir_spread_model;
-use epi_bevy::between_herd_spread_model::trace_between_herd_infection_events;
+use epi_bevy::between_herd_spread_model::print_between_herd_infection_events;
 use epi_bevy::cattle_population::{FarmId, HerdSize};
 use epi_bevy::scenario_time::ScenarioTime;
 use epi_bevy::sir_spread_model::{
@@ -44,7 +44,7 @@ mod disease_ecs_diagnostic;
 // these components look for all farms (initially). They can of course
 // be amended afterwards, but remember, commands are executed at the end
 // of a stage.
-// 
+//
 /// All the parameters for setting up a scenario-run.
 #[derive(Debug)]
 pub struct ScenarioConfiguration {
@@ -116,6 +116,10 @@ fn main() {
         .add_plugin(ScheduleRunnerPlugin::default())
         .add_plugin(LogPlugin::default())
         .add_plugins(MinimalPlugins)
+
+
+        // TODO: Things that follow here 
+
         .insert_resource(StdRng::seed_from_u64(20210426))
         // .insert_resource(ScenarioTick(0))
         .insert_resource(ScenarioTime::new(1, None))
@@ -133,10 +137,10 @@ fn main() {
         // them. So is there such a thing as a Bundle of Resources?
         .insert_resource(WithinHerdDiseaseParameters::new(0.03, 0.01))
         .insert_resource(between_herd_spread_model::ContactRate::new(0.095))
-        // .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.5).unwrap()).unwrap()))
-        // .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.01).unwrap()).unwrap()))
-        .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.0).unwrap()).unwrap()))
-        .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.00).unwrap()).unwrap()))
+        .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.5).unwrap()).unwrap()))
+        .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.01).unwrap()).unwrap()))
+        // .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.0).unwrap()).unwrap()))
+        // .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.00).unwrap()).unwrap()))
         // .insert_resource(ContactRate::new(0.0))
         //TODO: Everytime a new module is added to the mix, it needs a new setup
         // procedure to amend the farms with components pertaining to those new systems
@@ -157,7 +161,7 @@ fn main() {
             Seed::Contacts,
             between_herd_spread_model::setup_between_herd_spread_model.system(),
         )
-        .add_startup_system_to_stage(Seed::Contacts, epi_bevy::regulator_passive_surveillance::setup_passive_surveillance.system())
+        .add_startup_system_to_stage(Seed::Contacts, epi_bevy::active_surveillance::setup_passive_surveillance.system())
 
         // Main-loop 
 
@@ -169,7 +173,7 @@ fn main() {
                 .with_system(
                     between_herd_spread_model::update_between_herd_spread_model
                         .system()
-                        .chain(trace_between_herd_infection_events.system())
+                        // .chain(print_between_herd_infection_events.system())
                         .chain(epi_bevy::between_herd_spread_model_record::record_between_herd_infection_events.system()),
                 ),
         )
@@ -178,13 +182,13 @@ fn main() {
                 .label(Processes::Recording)
                 .after(Processes::Disease)
                 .with_system(
-                    epi_bevy::population_model_record::record_total_infected_farms
+                    epi_bevy::population_model_record::print_total_infected_farms
                         .system(),
                 ),
         )
         //TODO: Add a regulators system set! (and finish it)
         .add_system_set(SystemSet::new()
-            .with_system(epi_bevy::regulator_passive_surveillance::regulator_passive_surveillance.system())
+            // .with_system(epi_bevy::active_surveillance::active_surveillance.system())
             .label(Processes::Regulators))
         .add_system_set(
             SystemSet::new()

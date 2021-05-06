@@ -85,7 +85,7 @@ impl DiseaseCompartments {
     }
 }
 
-// TODO: Add a "DiseaseParameter" that is part of the [ScenarioConfiguration]
+// TODO: Add a [DiseaseParameter] that is part of the [ScenarioConfiguration]
 
 /// Update disease dynamics
 pub fn update_disease_compartments(

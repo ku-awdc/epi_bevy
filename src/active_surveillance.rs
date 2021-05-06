@@ -60,7 +60,7 @@ pub fn setup_passive_surveillance(
     });
 }
 
-pub fn regulator_passive_surveillance(
+pub fn active_surveillance(
     // regulator: PassiveRegulator,
     mut query: Query<(
         &mut Infected,

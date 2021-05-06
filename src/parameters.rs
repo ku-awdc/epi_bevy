@@ -95,6 +95,8 @@ impl Probability {
     }
 }
 
+// TODO: Combining/Compounding parameters is not really that trivial.
+
 // impl Rate {
 //     /// See [Probability::compound] for details.
 //     pub fn compound<const N: usize>(rates: [Self; N]) -> Self {

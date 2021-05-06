@@ -15,6 +15,8 @@ pub mod prelude {
 
 }
 
+pub mod tools;
+
 pub mod farm_id_to_entity_map;
 
 pub mod between_herd_spread_model;

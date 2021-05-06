@@ -179,7 +179,7 @@ pub fn seed_infection_random(
 }
 
 /// Place one infected individual into the mix.
-pub fn seed_infected_everywhere(query: Query<(&mut Susceptible, &mut Infected)>) {
+pub fn seed_infected_everywhere(mut query: Query<(&mut Susceptible, &mut Infected)>) {
     let mut empty_query = true;
     // currently this infects everyone
     // for between-herd infection, we should just infect one farm.

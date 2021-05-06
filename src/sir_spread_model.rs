@@ -61,13 +61,13 @@ impl Infected {
     // }
 }
 
-#[readonly::make]
+// #[readonly::make]
 #[derive(Debug, derive_more::Display, derive_more::Into, derive_more::From)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Recovered(pub usize);
 // pub struct Dead(pub usize);
 
-/// This is only used to instantiate the entites that are susceptible
+/// This is only used to instantiate the entities that are susceptible
 /// to this disease.
 #[readonly::make]
 #[derive(Debug, Bundle)]

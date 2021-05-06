@@ -37,7 +37,7 @@ pub struct PassiveRegulator {}
 /// Here we add the detection rate to each farm, as to be able to change it
 /// on a pr. farm basis later on.
 ///
-/// Add this to a startup system. Preferably after [CattleFarm]-entites has
+/// Add this to a startup system. Preferably after [CattleFarm]-entities has
 /// been added, otherwise this query is invalid.
 pub fn setup_passive_surveillance(
     mut commands: Commands,

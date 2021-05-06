@@ -102,7 +102,7 @@ fn main() {
 
     //TODO: Add a CSV plugin
     // - [ ] Hide the CSV behind a mutex.
-    // - [ ] Write all components of a specific entites (e.g. [CattleFarm])
+    // - [ ] Write all components of a specific entities (e.g. [CattleFarm])
     //       to a CSV file
     // - [ ] Save every other scenario / physical time.
     // - [ ] Save also in other modules (e.g. between-herd spread & a regulators).
@@ -113,7 +113,7 @@ fn main() {
     /// As [SystemStage] requires that the system-chain ends with unit-type `()`
     /// we have to use this to fuse the chain.
     ///
-    /// Author: TheRuwuMeatball
+    /// Author: @TheRuwuMeatball
     pub fn dispose<T>(_: In<T>) {}
 
     App::build()
@@ -153,9 +153,9 @@ fn main() {
         // .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.0).unwrap()).unwrap()))
         // .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.00).unwrap()).unwrap()))
         // .insert_resource(ContactRate::new(0.0))
-        //TODO: Everytime a new module is added to the mix, it needs a new setup
+        //TODO: Every time a new module is added to the mix, it needs a new setup
         // procedure to amend the farms with components pertaining to those new systems
-        // they can be regulators, and atleast any other thing that should be
+        // they can be regulators, and at least any other thing that should be
         // extended somehow...
         .add_startup_system(epi_bevy::cattle_farm_recorder::setup_cattle_farm_recorder.system())
         .add_startup_system(epi_bevy::between_herd_spread_model_record::setup_between_herd_infection_events_recording.system())

@@ -28,7 +28,7 @@ pub struct CattleFarmBundle {
 }
 
 #[readonly::make]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, derive_new::new)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct HerdSize(pub usize);
 

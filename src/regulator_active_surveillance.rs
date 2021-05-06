@@ -1,16 +1,15 @@
 //! This module works in the following way:
-//! 
-//! * Detection probability: 1\% x infection rate 
-//! * If detected, then there is a 50% chance of eliminating 
-//!   the infection completely, or 90%. 
-//! 
-//! 
-
+//!
+//! * Detection probability: 1\% x infection rate
+//! * If detected, then there is a 50% chance of eliminating
+//!   the infection completely, or 90%.
+//!
+//!
 
 // Note that this implementation is to showcase the presence of the central
 // located parameters, and not once spread-out over the entities.
 
-use std::marker::PhantomData;
+use std::{convert::TryFrom, marker::PhantomData};
 
 use crate::{
     parameters::{Probability, Rate},
@@ -24,14 +23,14 @@ use rand_distr::Distribution;
 #[derive(SystemParam)]
 pub struct ActiveSurveillance<'a> {
     // _secret: PhantomData<&'a ()>,
-    _secret: Res<'a, ()>,
+    // _secret: Res<'a, ()>,/
     /// For each infected animal, this is the rate of detection, typically 1%.
-    #[system_param(ignore)]
-    detection_rate: Rate,
+    // #[system_param(ignore)]
+    detection_rate: Option<Res<'a, Rate>>,
     /// Proportion of remaining infected animals if the fair coin flip turned out
     /// not to wipe out the infection on a farm. Typically 10%.
-    #[system_param(ignore)]
-    remaining_proportion: Probability,
+    // #[system_param(ignore)]
+    remaining_proportion: Option<Res<'a, Probability>>,
 }
 
 pub fn update_active_surveillance(
@@ -39,13 +38,15 @@ pub fn update_active_surveillance(
     mut query: Query<&mut Infected>,
     mut rng: ResMut<StdRng>,
 ) {
-    query.for_each_mut(|infected| {
+    let detection_rate = active_surveillance.detection_rate.as_ref().unwrap().0;
+    let remaining_proportion = active_surveillance.remaining_proportion.as_ref().unwrap().0;
+    query.for_each_mut(|mut infected| {
         if infected.0 > 0 {
             //infected farm
-            if rand_distr::Poisson::new((infected.0 as f64) * active_surveillance.detection_rate)
+            if rand_distr::Poisson::new((infected.0 as f64) * detection_rate)
                 .unwrap()
                 .sample(&mut *rng)
-                > 0
+                > 0.
             {
                 // the infection was detected
                 if rng.gen_bool(0.5) {
@@ -55,14 +56,12 @@ pub fn update_active_surveillance(
                     infected.0 = 0;
                 } else {
                     // failed to remove the entire infection.
-                    infected.0 =
-                        ((infected.0 as f64) * active_surveillance.remaining_proportion).round() as usize;
+                    infected.0 = ((infected.0 as f64) * remaining_proportion).round() as usize;
                 }
             }
         }
     })
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -70,7 +69,6 @@ mod tests {
 
     #[test]
     fn test_active_surveillance() {
-
         todo!("missing a test")
     }
 }

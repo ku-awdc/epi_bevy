@@ -15,6 +15,8 @@ bevy = { git = "https://github.com/bevyengine/bevy.git", default-features = fals
 
 # numerical rust
 approx = "0.4.0"
+num-traits = "0.2"
+# num-derive = "0.3"
 
 # enhance #rustlang 
 derive_more = "0.99.13"

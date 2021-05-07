@@ -101,7 +101,9 @@ pub fn update_disease_compartments(
     )>,
     mut rng: ResMut<StdRng>,
 ) {
-    for (herd_size, mut susceptible, mut infected, mut recovered, disease_parameters) in query.iter_mut() {
+    for (herd_size, mut susceptible, mut infected, mut recovered, disease_parameters) in
+        query.iter_mut()
+    {
         // dbg!("any");
         let DiseaseParameters {
             infection_rate,
@@ -122,7 +124,10 @@ pub fn update_disease_compartments(
         } as usize;
 
         // newly infected may only be atmost the number of susceptible animals
-        debug_assert!(delta_infected <= susceptible.0, "cannot infect more animals than there are present.");
+        debug_assert!(
+            delta_infected <= susceptible.0,
+            "cannot infect more animals than there are present."
+        );
         let delta_recovered = recovery_rate * infected.0 as f64;
         // let delta_recovered = delta_recovered.round() as usize;
         let delta_recovered = if rng.gen_bool(delta_recovered.fract()) {
@@ -132,7 +137,10 @@ pub fn update_disease_compartments(
         } as usize;
 
         // number of recovered may at most be the number of infected
-        debug_assert!(delta_recovered <= infected.0, "cannot recover more animals than infected");
+        debug_assert!(
+            delta_recovered <= infected.0,
+            "cannot recover more animals than infected"
+        );
 
         susceptible.0 = susceptible.0.saturating_sub(delta_infected);
         infected.0 = if delta_infected < delta_recovered {

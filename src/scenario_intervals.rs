@@ -10,7 +10,6 @@ use crate::scenario_time::ScenarioTime;
 
 pub fn run_yearly(scenario_time: Res<ScenarioTime>) -> ShouldRun {
     if scenario_time.first_day_of_the_year() {
-        // ShouldRun::YesAndCheckAgain
         ShouldRun::Yes
     } else {
         ShouldRun::No
@@ -19,7 +18,14 @@ pub fn run_yearly(scenario_time: Res<ScenarioTime>) -> ShouldRun {
 
 pub fn run_every_week(scenario_time: Res<ScenarioTime>) -> ShouldRun {
     if scenario_time.first_day_of_week(None) {
-        // ShouldRun::YesAndCheckAgain
+        ShouldRun::Yes
+    } else {
+        ShouldRun::No
+    }
+}
+
+pub fn run_every_month(scenario_time: Res<ScenarioTime>) -> ShouldRun {
+    if scenario_time.first_day_of_the_month() {
         ShouldRun::Yes
     } else {
         ShouldRun::No

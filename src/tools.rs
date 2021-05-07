@@ -1,31 +1,38 @@
-//! Mathematical tools that are typically available in R/Python etc. 
-//! 
+//! Mathematical tools that are typically available in R/Python etc.
+//!
 
-use std::fmt::Debug;
+// spell-checker: words stoch
 
-use num_traits::{Float, ToPrimitive};
+use num_traits::Float;
 use rand::Rng;
 
-/// Round to the nearest integer through the sampling the fractional part.
-pub fn round_stoch(value: impl Float + ToPrimitive + Debug, rng: &mut impl Rng) -> impl Float + Debug{
-    if rng.gen_bool(value.fract().to_f64().unwrap()) {
-        value.ceil()
-    } else {
-        value.floor()
+pub trait FloatExt: Float {
+    /// Round to the nearest integer through the sampling the fractional part.
+    fn round_stoch(self, rng: &mut impl Rng) -> Self
+    where
+        Self: Sized,
+    {
+        if rng.gen_bool(self.fract().to_f64().unwrap()) {
+            self.ceil()
+        } else {
+            self.floor()
+        }
     }
 }
 
+impl FloatExt for f32 {}
+impl FloatExt for f64 {}
+
 #[cfg(test)]
 mod tests {
-    use rand::{SeedableRng, prelude::StdRng};
+    use rand::{prelude::StdRng, SeedableRng};
 
     use super::*;
 
     #[test]
     fn round_stochastically() {
         let mut rng = StdRng::seed_from_u64(202105);
-        dbg!(round_stoch(1.2, &mut rng));
-        dbg!(round_stoch(1.8, &mut rng));
-        
+        dbg!(1.2.round_stoch(&mut rng));
+        dbg!(1.8.round_stoch(&mut rng));
     }
 }

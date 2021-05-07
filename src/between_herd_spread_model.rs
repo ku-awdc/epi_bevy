@@ -1,11 +1,13 @@
 //!
 //!
 //! Infectiousness is based on total number of infected from the
-//! receepient farm
+//! recipient farm
 //!
 //!
 //! The startup system [setup_between_herd_spread_model] is necessary for
 //! this to make sense.
+
+use std::convert::TryFrom;
 
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
@@ -15,24 +17,20 @@ use rand::prelude::*;
 use crate::{
     cattle_population::{AdjacentFarms, CattleFarm, FarmId, HerdSize},
     farm_id_to_entity_map::FarmIdEntityMap,
+    parameters::{Probability, Rate},
     scenario_time::ScenarioTime,
     sir_spread_model::{Infected, Susceptible},
 };
 
 #[readonly::make]
-#[derive(Debug, Clone, Copy)]
-pub struct ContactRate(pub f64);
-
-impl ContactRate {
-    pub fn new(contact_rate: f64) -> Self {
-        Self { 0: contact_rate }
-    }
-}
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, derive_more::Into, derive_more::Display, derive_new::new)]
+pub struct ContactRate(pub Rate);
 
 /// Here we add the contact rate to each farm, as to be able to change it
 /// on a pr. farm basis later on.
 ///
-/// Add this to a startup system. Preferably after [CattleFarm]-entites has
+/// Add this to a startup system. Preferably after [CattleFarm]-entities has
 /// been added, otherwise this query is invalid.
 pub fn setup_between_herd_spread_model(
     mut commands: Commands,
@@ -85,7 +83,8 @@ pub fn update_between_herd_spread_model(
     // determine from farms
     // let active_infected_farms = query.iter_mut().filter(|info| info.0.0 > 0);
 
-    //FIXME: do something with thiss
+    //FIXME: do something with this
+    //
     // let new_infection_events:Vec<(FarmId, FarmId)> = active_infected_farms
     // let infectious_farms: Vec<(Infected, AdjacentFarms, HerdSize, FarmId)> = model.query
     // let infectious_farms = model.query
@@ -104,9 +103,7 @@ pub fn update_between_herd_spread_model(
         })
         .filter(|(_, _, contact_rate, _, _)| {
             // .filter(|(farm, )| {
-            let contact_rate: &&ContactRate = contact_rate;
-
-            rng.gen_bool(contact_rate.0)
+            rng.gen_bool(Probability::try_from(contact_rate.0).unwrap().0)
         })
         .map(
             |info: (&Infected, &AdjacentFarms, &ContactRate, &HerdSize, &FarmId)| {

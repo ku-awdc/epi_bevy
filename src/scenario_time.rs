@@ -179,6 +179,13 @@ impl ScenarioTime {
         day_counter % 7 == 1 && week_no.map_or(true, |x| x == self.current_week_in_the_year())
     }
 
+    /// Returns `true` if it is the first day of month;
+    #[must_use]
+    pub fn first_day_of_the_month(&self) -> bool {
+        let day_counter = self.current_time();
+        day_counter % 30 == 1
+    }
+
     /// Returns true if the scenario has ended according to the provided `end_time`.
     #[must_use]
     pub fn ended(&self) -> bool {

@@ -13,11 +13,19 @@
 //!       from one farm onto another.
 //! - [ ] Implement true passive surveillance, which is the true/observed
 //!       prevalence "watcher". Maybe set that to weekly or similar.
-//! 
+//!
 //! - [ ] Add the 50% -> {0% infected, or 90% recovered} regulator
 //! - [ ] Ensure that the simulation is "actually" deterministic, when everything
-//!       is set. 
+//!       is set.
 //!
+//!
+//! Matt's goal
+//!
+//! - [ ] Figure out the way regulators are going to enter the model.
+//!
+//!
+//! The graphs should be indexable by some property just to evade any type
+//! of message passing need between the nodes.
 //!
 //! inspiration/formulas can be found [here](https://www.uio.no/studier/emner/matnat/ifi/IN1900/h18/ressurser/slides/disease_modeling.pdf)
 //! For [SEIR-model](http://indico.ictp.it/event/7960/session/3/contribution/19/material/slides/0.pdf)
@@ -27,7 +35,11 @@ use epi_bevy::{
     farm_id_to_entity_map::FarmIdEntityMap,
     parameters::{Probability, Rate},
     prelude::*,
-    deprecated_active_surveillance::{DetectionRatePerAnimal, DetectionRatePerFarm},
+    regulator_active_surveillance::{
+        update_active_surveillance, DetectionRate, RemainingProportion,
+    },
+    regulator_passive_surveillance::update_passive_surveillance,
+    scenario_intervals::run_every_month,
     sir_spread_model,
 };
 use std::{collections::HashMap, convert::TryFrom};
@@ -146,10 +158,16 @@ fn main() {
         // .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
         //TODO: this block adds parameters, but what I'd ideally want is for the SceneConfiguration to add
         // them. So is there such a thing as a Bundle of Resources?
-        .insert_resource(WithinHerdDiseaseParameters::new(0.03, 0.01))
-        .insert_resource(between_herd_spread_model::ContactRate::new(0.095))
-        .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.5).unwrap()).unwrap()))
-        .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.01).unwrap()).unwrap()))
+        .insert_resource(WithinHerdDiseaseParameters::new(0.003, 0.00001))
+        // .insert_resource(between_herd_spread_model::ContactRate::new(0.095))
+        .insert_resource(between_herd_spread_model::ContactRate::new(Rate::new(10.).unwrap()))
+        
+    .insert_resource(DetectionRate::new(
+        Rate::try_from(Probability::new(0.0031).unwrap()).unwrap(),
+    ))
+    .insert_resource(RemainingProportion::new(Probability::new(0.10).unwrap()))
+        // .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.5).unwrap()).unwrap()))
+        // .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.01).unwrap()).unwrap()))
         // .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.0).unwrap()).unwrap()))
         // .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.00).unwrap()).unwrap()))
         // .insert_resource(ContactRate::new(0.0))
@@ -172,7 +190,7 @@ fn main() {
             Seed::Contacts,
             between_herd_spread_model::setup_between_herd_spread_model.system(),
         )
-        .add_startup_system_to_stage(Seed::Contacts, epi_bevy::deprecated_active_surveillance::setup_passive_surveillance.system())
+        // .add_startup_system_to_stage(Seed::Contacts, epi_bevy::deprecated_active_surveillance::setup_passive_surveillance.system())
 
         // Main-loop 
 
@@ -192,6 +210,13 @@ fn main() {
             SystemSet::new()
                 .label(Processes::Recording)
                 .after(Processes::Disease)
+                // record csv
+                // .with_run_criteria(epi_bevy::scenario_intervals::run_yearly.system())
+                .with_run_criteria(epi_bevy::scenario_intervals::run_every_week.system())
+                .with_system(
+                    epi_bevy::cattle_farm_recorder::record_cattle_farm_components.system(),
+                )
+                // print prevalence
                 .with_system(
                     epi_bevy::population_model_record::print_total_infected_farms
                         .system(),
@@ -200,15 +225,10 @@ fn main() {
         //TODO: Add a regulators system set! (and finish it)
         .add_system_set(SystemSet::new()
             // .with_system(epi_bevy::active_surveillance::active_surveillance.system())
+            .with_system(update_active_surveillance.system())
+            .with_system(update_passive_surveillance.system().with_run_criteria(run_every_month.system()))
             .label(Processes::Regulators))
-        .add_system_set(
-            SystemSet::new()
-                // .with_run_criteria(epi_bevy::scenario_intervals::run_yearly.system())
-                .with_run_criteria(epi_bevy::scenario_intervals::run_every_week.system())
-                .with_system(
-                    epi_bevy::cattle_farm_recorder::record_cattle_farm_components.system(),
-                ),
-        )
+
         // .add_system_to_stage(CoreStage::Update, examine_population.system())
         // TODO: add recorder
         // FIXME: this doesn't work;

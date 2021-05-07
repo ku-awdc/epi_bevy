@@ -52,6 +52,17 @@ pub fn update_exogenous_infection_rate_outside_of_disease_model(
         // is it possible to infect more animals on the farm?
         if sus.0 > delta_inf {
             sus.0 -= delta_inf;
+
+            //TODO: consider adding a step here where you consider newInf -> Recovered
+            // as those would have been ignored due to this step not being part of
+            // the spread model.
+            // let delta_rec = todo!("recovery rate is not readily available to be accessed from another system")
+            // note: this is way rates should live on the entities that they
+            // are affecting, as to maintain coherence when other models into
+            // the simulation as well.
+            //
+            // rec.0 += delta_rec;
+            // inf.0 += (delta_inf - delta_rec);
             inf.0 += delta_inf;
         }
     })

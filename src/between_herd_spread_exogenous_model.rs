@@ -49,6 +49,7 @@ pub fn update_exogenous_infection_rate_outside_of_disease_model(
         let delta_inf = sus.0 as f64 * rate.0 .0;
         let delta_inf = delta_inf.round() as usize;
 
+        // is it possible to infect more animals on the farm?
         if sus.0 > delta_inf {
             sus.0 -= delta_inf;
             inf.0 += delta_inf;

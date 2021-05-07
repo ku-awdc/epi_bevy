@@ -27,7 +27,7 @@ use epi_bevy::{
     farm_id_to_entity_map::FarmIdEntityMap,
     parameters::{Probability, Rate},
     prelude::*,
-    active_surveillance::{DetectionRatePerAnimal, DetectionRatePerFarm},
+    deprecated_active_surveillance::{DetectionRatePerAnimal, DetectionRatePerFarm},
     sir_spread_model,
 };
 use std::{collections::HashMap, convert::TryFrom};
@@ -172,7 +172,7 @@ fn main() {
             Seed::Contacts,
             between_herd_spread_model::setup_between_herd_spread_model.system(),
         )
-        .add_startup_system_to_stage(Seed::Contacts, epi_bevy::active_surveillance::setup_passive_surveillance.system())
+        .add_startup_system_to_stage(Seed::Contacts, epi_bevy::deprecated_active_surveillance::setup_passive_surveillance.system())
 
         // Main-loop 
 

@@ -1,8 +1,8 @@
 //! Cattle farms come from a database or similar configuration of population
 //! and with it comes an associated farm id. This farm id corresponds with
 //! an entity id, see [Entity], and this map maintains this relation.
-//! 
-//! This would be used with whatever 
+//!
+//! This would be used with whatever
 
 use crate::cattle_population::FarmId;
 use crate::prelude::*;

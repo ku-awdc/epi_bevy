@@ -26,8 +26,6 @@ fn print_population_disease_states_at_app_exit(
     }
 }
 
-
-
 /// Print disease states if infected state every half a second;
 #[deprecated(note = "please use run criteria to handle when systems are run.")]
 fn log_every_half_second(

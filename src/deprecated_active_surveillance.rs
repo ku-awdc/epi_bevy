@@ -1,6 +1,6 @@
 //! UPDATE: This is ill-conceived and should be replaced by something else
 //! rather soon.
-//! 
+//!
 //! Passive surveillance regulator
 //!
 //! Detection happen as 1% x infected

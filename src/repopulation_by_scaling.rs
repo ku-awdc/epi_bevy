@@ -27,7 +27,7 @@ fn repopulate_rescale_disease_compartments(
     //TODO: consider a skipping if the proportions are small.
 
     query.for_each_mut(|(mut sus, mut inf, mut rec, herd_size)| {
-        let compartments_sum = sus.0 + inf.0  + rec.0;
+        let compartments_sum = sus.0 + inf.0 + rec.0;
         sus.0 = ((sus.0 as f64) * (herd_size.0 as f64 / compartments_sum as f64)).round() as usize;
         inf.0 = ((inf.0 as f64) * (herd_size.0 as f64 / compartments_sum as f64)).round() as usize;
         rec.0 = ((rec.0 as f64) * (herd_size.0 as f64 / compartments_sum as f64)).round() as usize;

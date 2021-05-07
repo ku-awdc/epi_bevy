@@ -1,5 +1,5 @@
-use std::fs::File;
 use csv::Writer;
+use std::fs::File;
 
 use crate::between_herd_spread_model::InfectionEvents;
 use crate::prelude::*;

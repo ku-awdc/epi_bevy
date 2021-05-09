@@ -1,0 +1,23 @@
+//
+// TODO: This example showcases querying entities on trait implementations
+// in bevy. Is this possible?
+
+use bevy::prelude::*;
+use std::fmt::Debug;
+
+pub trait DebugComponen t: bevy::ecs::component::Component + Debug + ?Sized {}
+
+fn main() {
+    let mut mini_world = World::new();
+    let entity_id = mini_world.spawn().insert(432).id();
+
+    fn my_system(query: Query<&dyn DebugComponent>) {
+        query.for_each(|x| {
+            // dbg!(x);
+        });
+    }
+
+    let mut some_stage = SystemStage::single(my_system.system());
+
+    some_stage.run(&mut mini_world);
+}

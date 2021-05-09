@@ -6,8 +6,10 @@ use epi_bevy::{
     sir_spread_model::{self, Infected, Susceptible},
 };
 
+
 /// Printing the disease states whenever invoked. These disease states corresponds
 /// to [DiseaseCompartments].
+#[allow(dead_code)]
 fn print_population_disease_states_at_app_exit(
     tick: Res<ScenarioTime>,
     query: Query<(&Infected, &Susceptible)>,
@@ -28,6 +30,7 @@ fn print_population_disease_states_at_app_exit(
 
 /// Print disease states if infected state every half a second;
 #[deprecated(note = "please use run criteria to handle when systems are run.")]
+#[allow(dead_code)]
 fn log_every_half_second(
     query: Query<(
         &FarmId,
@@ -50,6 +53,7 @@ fn log_every_half_second(
 }
 
 /// Print disease states if infected state has changed.
+#[allow(dead_code)]
 fn log_changes_in_infected(
     query: Query<
         (

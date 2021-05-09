@@ -50,8 +50,7 @@ use bevy::{
     log::LogPlugin,
 };
 
-use epi_bevy::between_herd_spread_model::print_between_herd_infection_events;
-use epi_bevy::cattle_population::{FarmId, HerdSize};
+use epi_bevy::cattle_population::FarmId;
 use epi_bevy::scenario_time::ScenarioTime;
 use epi_bevy::sir_spread_model::{
     DiseaseCompartments, DiseaseParameters as WithinHerdDiseaseParameters,
@@ -154,16 +153,15 @@ fn main() {
             //FIXME: this is currently unused
             max_repetitions: 2,
         })
-        // .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
+        .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
         // .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
         //TODO: this block adds parameters, but what I'd ideally want is for the SceneConfiguration to add
         // them. So is there such a thing as a Bundle of Resources?
-        .insert_resource(WithinHerdDiseaseParameters::new(0.003, 0.00001))
+        // .insert_resource(WithinHerdDiseaseParameters::new(0.003, 0.00001))
         // .insert_resource(between_herd_spread_model::ContactRate::new(0.095))
         .insert_resource(between_herd_spread_model::ContactRate::new(Rate::new(10.).unwrap()))
-        
     .insert_resource(DetectionRate::new(
-        Rate::try_from(Probability::new(0.0031).unwrap()).unwrap(),
+        Rate::try_from(Probability::new(0.00031).unwrap()).unwrap(),
     ))
     .insert_resource(RemainingProportion::new(Probability::new(0.10).unwrap()))
         // .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.5).unwrap()).unwrap()))

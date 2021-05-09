@@ -1,5 +1,4 @@
 use rand::SeedableRng;
-
 use super::*;
 
 #[test]

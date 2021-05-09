@@ -20,7 +20,7 @@ use crate::{
 
 /// This is intermittently linked with the disease spread model on the within
 /// herd part and thus couldn't really be updated without some knowledge  
-
+#[allow(dead_code)]
 fn repopulate_rescale_disease_compartments(
     mut query: Query<(&mut Susceptible, &mut Infected, &mut Recovered, &HerdSize)>,
 ) {

@@ -3,7 +3,7 @@
 //!
 
 use bevy::ecs::schedule::ReportExecutionOrderAmbiguities;
-use rand::{SeedableRng, prelude::StdRng};
+use rand::{prelude::StdRng, SeedableRng};
 
 use crate::{prelude::*, scenario_time::ScenarioTime};
 
@@ -14,7 +14,6 @@ struct ScenarioBuilder {
 }
 
 impl ScenarioBuilder {
-    
     #[must_use]
     pub fn build(self) -> Scenario {
         let mut world = World::new();
@@ -30,10 +29,7 @@ impl ScenarioBuilder {
         world.insert_resource(StdRng::seed_from_u64(self.seed));
         world.insert_resource(ScenarioTime::new(1, None));
 
-        
-        Scenario {
-            world,
-        }
+        Scenario { world }
     }
 
     /// Set the scenario builder's `seed`.
@@ -55,7 +51,7 @@ mod tests {
     #[test]
     fn test_default_scenario() {
         let mut default_world = ScenarioBuilder::new();
-        
+
         assert_eq!(default_world.seed, 20210426, "default seed has changed?");
     }
 }

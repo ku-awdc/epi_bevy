@@ -6,7 +6,6 @@ use epi_bevy::{
     sir_spread_model::{self, Infected, Susceptible},
 };
 
-
 /// Printing the disease states whenever invoked. These disease states corresponds
 /// to [DiseaseCompartments].
 #[allow(dead_code)]

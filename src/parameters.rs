@@ -7,12 +7,18 @@
 //!
 //!
 use anyhow::Result;
-use std::convert::{TryFrom, TryInto};
+use std::{
+    array::IntoIter,
+    convert::{TryFrom, TryInto},
+    ops::Neg,
+};
 use thiserror::Error;
 
 #[readonly::make]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Copy, derive_more::Into, derive_more::Display)]
+#[derive(
+    Debug, Clone, Copy, derive_more::Into, derive_more::Display, derive_more::Add, derive_more::Sum,
+)]
 pub struct Rate(pub f64);
 
 impl Rate {
@@ -21,14 +27,28 @@ impl Rate {
     }
 }
 
-#[readonly::make]
+// #[readonly::make]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, Copy, derive_more::Display, derive_more::Into)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    derive_more::Display,
+    derive_more::Into,
+    // derive_more::MulSelf,
+    // derive_more::Mul, // doesn't work with product
+    // derive_more::Product,
+)]
 pub struct Probability(pub f64);
 
 impl Probability {
     pub fn new(value: f64) -> Result<Self> {
         Ok(value.try_into()?)
+    }
+
+    pub fn complement(mut self) -> Self {
+        self.0 = 1. - self.0;
+        self
     }
 }
 
@@ -95,15 +115,23 @@ impl Probability {
     }
 }
 
-// TODO: Combining/Compounding parameters is not really that trivial.
+///
+///
+/// Formula is: probability = 1 - exp(-\sum_i \lambda_i)
+pub fn compound_rates<const N: usize>(rates: [Rate; N]) -> Probability {
+    Probability::try_from(1. - IntoIter::new(rates).sum::<Rate>().0.neg().exp()).unwrap()
+}
 
-// impl Rate {
-//     /// See [Probability::compound] for details.
-//     pub fn compound<const N: usize>(rates: [Self; N]) -> Self {
-//         let probabilities: [Probability; N] = rates.into();
-//         todo!()
-//         // std::array::IntoIter::new(rates)
-//         //     .map_into::<Probability>()
-
-//     }
-// }
+/// This is less numerically efficient/precise than [compound_rates], but it
+/// should yield the same result.
+fn compound_probabilities<const N: usize>(probabilities: [Probability; N]) -> Probability {
+    IntoIter::new(probabilities)
+        .map(|p| p.complement())
+        // .product::<Probability>() // use this instead when derive_more works
+        // with Product and Mul
+        .fold(Probability::new(1.).unwrap(), |mut acc, x| {
+            acc.0 *= x.0;
+            acc
+        })
+        .complement()
+}

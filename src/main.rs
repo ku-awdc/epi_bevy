@@ -118,7 +118,6 @@ fn main() {
     // - [ ] Save every other scenario / physical time.
     // - [ ] Save also in other modules (e.g. between-herd spread & a regulators).
 
-
     App::build()
         .insert_resource(bevy::log::LogSettings {
             level: bevy::log::Level::DEBUG,

@@ -1,5 +1,5 @@
-use rand::SeedableRng;
 use super::*;
+use rand::SeedableRng;
 
 #[test]
 fn test_active_surveillance() {

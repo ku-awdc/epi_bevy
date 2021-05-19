@@ -1,12 +1,7 @@
 //!
 //!
 //!
-use bevy::prelude::*;
-
-#[cfg(feature = "serialize")]
-use serde::{Deserialize, Serialize};
-
-use itertools::Itertools;
+use crate::prelude::*;
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]

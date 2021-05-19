@@ -16,11 +16,11 @@ bevy = { git = "https://github.com/bevyengine/bevy.git", default-features = fals
 
 # numerical rust
 approx = "0.4.0"
-num-traits = "0.2"
+num-traits = "0.2.14"
 # num-derive = "0.3"
 
 # enhance #rustlang 
-derive_more = "0.99.13"
+derive_more = "0.99.14"
 derive-new = "0.5.9"
 itertools = "0.10.0"
 readonly = "0.2.0"
@@ -31,7 +31,7 @@ anyhow = "1.0.40"
 thiserror = "1.0.24"
 
 # serialisation
-serde = { version = "1", features = ["derive"], optional = true }
+serde = { version = "1.0.126", features = ["derive"], optional = true }
 serde_json = { version = "1.0.64", optional = true }
 
 # states/outputs recorders

@@ -23,13 +23,21 @@ pub mod prelude {
     //!
     //!
     pub use bevy::prelude::*;
+
     pub use itertools::Itertools;
+    #[cfg(feature = "serialize")]
+    pub use serde::{Deserialize, Serialize};
 
     //TODO: add [bevy::ecs::system::SystemParam] as I believe this should
     // be included in the prelude, but it isn't.
 }
 
+// scenario builder
+pub mod populations;
+pub mod scenario_builder;
+
 // ecs tools
+pub mod chain_tools;
 pub mod scenario_intervals;
 
 // math

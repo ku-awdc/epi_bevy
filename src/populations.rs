@@ -10,6 +10,8 @@ use crate::prelude::*;
 
 pub trait Population: Component {}
 
+impl Population for () {}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Cattle;
@@ -46,7 +48,7 @@ pub struct FarmId<P: Population>(pub usize, PhantomData<P>);
 #[readonly::make]
 #[derive(Debug, Clone, Copy, derive_new::new)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct HerdSize<P: Population>(pub usize, PhantomData<P>);
+pub struct HerdSize<P: Population = ()>(pub usize, PhantomData<P>);
 
 #[readonly::make]
 #[derive(Debug, Clone)]
@@ -80,5 +82,12 @@ mod tests {
         dbg!(world.get_resource::<TotalFarms<Sheep>>().unwrap());
         dbg!(world.get_resource::<TotalFarms<Cattle>>().unwrap());
         dbg!(world.get_resource::<TotalFarms<Pig>>().unwrap());
+
+        // Alright, next add a herd-size that isn't tied to any one particular
+        // population
+        world.insert_resource(HerdSize::<()>::new(1000));
+
+        dbg!(world.get_resource::<HerdSize>().unwrap());
+
     }
 }

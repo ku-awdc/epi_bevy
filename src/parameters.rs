@@ -8,7 +8,6 @@
 //!
 use anyhow::Result;
 use std::{
-    array::IntoIter,
     convert::{TryFrom, TryInto},
     ops::Neg,
 };
@@ -118,14 +117,15 @@ impl Probability {
 ///
 ///
 /// Formula is: probability = 1 - exp(-\sum_i \lambda_i)
-pub fn compound_rates<const N: usize>(rates: [Rate; N]) -> Probability {
-    Probability::try_from(1. - IntoIter::new(rates).sum::<Rate>().0.neg().exp()).unwrap()
+pub fn compound_rates(rates: &[Rate]) -> Probability {
+    Probability::try_from(1. - rates.iter().copied().sum::<Rate>().0.neg().exp()).unwrap()
 }
 
 /// This is less numerically efficient/precise than [compound_rates], but it
 /// should yield the same result.
-fn compound_probabilities<const N: usize>(probabilities: [Probability; N]) -> Probability {
-    IntoIter::new(probabilities)
+fn compound_probabilities(probabilities: &[Probability]) -> Probability {
+    probabilities
+        .iter()
         .map(|p| p.complement())
         // .product::<Probability>() // use this instead when derive_more works
         // with Product and Mul
@@ -134,4 +134,24 @@ fn compound_probabilities<const N: usize>(probabilities: [Probability; N]) -> Pr
             acc
         })
         .complement()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_equivalence_of_compounding_probability() {
+        dbg!(&compound_rates(&[
+            Rate::new(0.5).unwrap(),
+            Rate::new(0.5).unwrap(),
+            // Rate::new(12.).unwrap()
+        ]));
+        dbg!(&compound_probabilities(&[
+            Probability::new(0.5).unwrap(),
+            Probability::new(0.5).unwrap(),
+            // Rate::new(12.).unwrap()
+        ]));
+        // dbg!(&compound_rates([0.5, 0.5]));
+    }
 }

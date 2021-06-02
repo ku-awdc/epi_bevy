@@ -9,6 +9,7 @@ use crate::{prelude::*, scenario_time::ScenarioTime};
 
 #[derive(derive_new::new)]
 struct ScenarioBuilder {
+    /// Random number generator seed.
     #[new(value = "20210426")]
     seed: u64,
 }

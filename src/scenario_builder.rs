@@ -2,10 +2,8 @@
 //!
 //!
 
-use bevy::ecs::schedule::ReportExecutionOrderAmbiguities;
-use rand::{prelude::StdRng, SeedableRng};
-
 use crate::{prelude::*, scenario_time::ScenarioTime};
+use bevy::ecs::schedule::   ReportExecutionOrderAmbiguities;
 
 #[derive(derive_new::new)]
 struct ScenarioBuilder {
@@ -18,7 +16,7 @@ impl ScenarioBuilder {
     #[must_use]
     pub fn build(self) -> Scenario {
         let mut world = World::new();
-
+        
         // default resources...
         world.insert_resource(bevy::log::LogSettings {
             level: bevy::log::Level::DEBUG,

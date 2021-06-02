@@ -4,9 +4,9 @@
 //!
 //!
 
-use bevy::{ecs::schedule::ShouldRun, prelude::*};
-
+use crate::prelude::*;
 use crate::scenario_time::ScenarioTime;
+use bevy::ecs::schedule::ShouldRun;
 
 pub fn run_yearly(scenario_time: Res<ScenarioTime>) -> ShouldRun {
     if scenario_time.first_day_of_the_year() {

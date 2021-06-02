@@ -1,12 +1,15 @@
 //!
 //!
+extern crate derive_new_default;
+use crate::prelude::*;
 use std::marker::PhantomData;
 
-use bevy::ecs::component::Component;
+use derive_new_default::DefaultNew;
 
 // ! This is (supposed) to replace [crate::cattle_population].
 
 use crate::prelude::*;
+use bevy::ecs::component::Component;
 
 pub trait Population: Component {}
 
@@ -58,15 +61,15 @@ pub struct AdjacentFarms<P: Population = ()>(pub Vec<FarmId<P>>);
 /// Intended to be stored as a global available resource
 /// for each added population to the [crate::scenario_builder::Scenario].
 #[readonly::make]
-#[derive(Debug, Clone, Copy, derive_new::new)]
+#[derive(Debug, Clone, Copy, derive_new::new, DefaultNew)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct TotalFarms<P: Population = ()>(pub usize, PhantomData<P>);
 
-impl TotalFarms {
-    pub fn new_default(value: usize) -> Self {
-        Self(value, PhantomData)
-    }
-}
+// impl TotalFarms {
+//     pub fn new_default(value: usize) -> Self {
+//         Self(value, PhantomData)
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

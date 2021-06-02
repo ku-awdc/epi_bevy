@@ -7,15 +7,17 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# [workspace]
+
 [dependencies]
 # bevy = { git = "https://github.com/bevyengine/bevy.git", features = ["dynamic"], default-features = false }
 # bevy = { path = "../bevy/", features = ["dynamic"], default-features = false }
 # dynamic is behaving weird on windows
 # bevy = { git = "https://github.com/bevyengine/bevy.git", features = ["dynamic"], default-features = false }
-bevy = { git = "https://github.com/bevyengine/bevy.git", default-features = false }
+bevy = { git = "https://github.com/bevyengine/bevy.git", branch = "main", default-features = false }
 
 # numerical rust
-approx = "0.4.0"
+approx = "0.5.0"
 num-traits = "0.2.14"
 # num-derive = "0.3"
 
@@ -43,6 +45,8 @@ chrono = "0.4.19"
 # PRNG 
 rand = "0.8.3"
 rand_distr = "0.4.0"
+
+derive-new-default = { path = "derive-new-default" }
 
 [features]
 default = ["serialize"]

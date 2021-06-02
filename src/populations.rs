@@ -33,7 +33,7 @@ impl Population for Sheep {}
 // #[readonly::make]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Bundle)]
-pub struct FarmBundle<P: Population> {
+pub struct FarmBundle<P: Population = ()> {
     population: P,
     pub farm_id: FarmId<P>,
     pub herd_size: HerdSize<P>,
@@ -43,7 +43,7 @@ pub struct FarmBundle<P: Population> {
 // #[readonly::make]
 #[derive(Debug, Copy, Clone, PartialEq, Hash, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct FarmId<P: Population>(pub usize, PhantomData<P>);
+pub struct FarmId<P: Population = ()>(pub usize, PhantomData<P>);
 
 #[readonly::make]
 #[derive(Debug, Clone, Copy, derive_new::new)]
@@ -53,14 +53,20 @@ pub struct HerdSize<P: Population = ()>(pub usize, PhantomData<P>);
 #[readonly::make]
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct AdjacentFarms<P: Population>(pub Vec<FarmId<P>>);
+pub struct AdjacentFarms<P: Population = ()>(pub Vec<FarmId<P>>);
 
 /// Intended to be stored as a global available resource
 /// for each added population to the [crate::scenario_builder::Scenario].
 #[readonly::make]
 #[derive(Debug, Clone, Copy, derive_new::new)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct TotalFarms<P: Population>(pub usize, PhantomData<P>);
+pub struct TotalFarms<P: Population = ()>(pub usize, PhantomData<P>);
+
+impl TotalFarms {
+    pub fn new_default(value: usize) -> Self {
+        Self(value, PhantomData)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -88,6 +94,17 @@ mod tests {
         world.insert_resource(HerdSize::<()>::new(1000));
 
         dbg!(world.get_resource::<HerdSize>().unwrap());
+    }
 
+    /// Test if the default population `()` can be used without any friction.
+    #[test]
+    fn test_default_population() {
+        let mut world = World::new();
+
+        // let total_farms = TotalFarms::new(90);
+        let total_farms = TotalFarms::new_default(90);
+
+        dbg!(total_farms);
+        
     }
 }

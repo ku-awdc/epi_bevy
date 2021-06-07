@@ -2,8 +2,8 @@
 // This example was made because there was an issue where the simulation wasn't
 // running at all, and this was to see if the simple scenario with a
 // ticker would run.
-// 
-// 
+//
+//
 use bevy::{
     app::{AppExit, ScheduleRunnerPlugin},
     diagnostic::{DiagnosticsPlugin, LogDiagnosticsPlugin},

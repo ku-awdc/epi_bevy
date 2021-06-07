@@ -6,6 +6,8 @@ use bevy::ecs::component::Component;
 
 // ! This is (supposed) to replace [crate::cattle_population].
 
+// TODO: Create a macro that generates a lot of this.
+
 use crate::prelude::*;
 
 pub trait Population: Component {}
@@ -88,6 +90,5 @@ mod tests {
         world.insert_resource(HerdSize::<()>::new(1000));
 
         dbg!(world.get_resource::<HerdSize>().unwrap());
-
     }
 }

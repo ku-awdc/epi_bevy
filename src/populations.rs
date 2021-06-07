@@ -1,4 +1,6 @@
 //!
+//! Use `()` as the default [Population] if the multiple populations are not
+//! the target.
 //!
 use std::marker::PhantomData;
 
@@ -35,7 +37,7 @@ impl Population for Sheep {}
 // #[readonly::make]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Bundle)]
-pub struct FarmBundle<P: Population> {
+pub struct FarmBundle<P: Population = ()> {
     population: P,
     pub farm_id: FarmId<P>,
     pub herd_size: HerdSize<P>,
@@ -45,7 +47,7 @@ pub struct FarmBundle<P: Population> {
 // #[readonly::make]
 #[derive(Debug, Copy, Clone, PartialEq, Hash, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct FarmId<P: Population>(pub usize, PhantomData<P>);
+pub struct FarmId<P: Population = ()>(pub usize, PhantomData<P>);
 
 #[readonly::make]
 #[derive(Debug, Clone, Copy, derive_new::new)]
@@ -55,14 +57,40 @@ pub struct HerdSize<P: Population = ()>(pub usize, PhantomData<P>);
 #[readonly::make]
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct AdjacentFarms<P: Population>(pub Vec<FarmId<P>>);
+pub struct AdjacentFarms<P: Population = ()>(pub Vec<FarmId<P>>, PhantomData<P>);
 
 /// Intended to be stored as a global available resource
 /// for each added population to the [crate::scenario_builder::Scenario].
 #[readonly::make]
 #[derive(Debug, Clone, Copy, derive_new::new)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct TotalFarms<P: Population>(pub usize, PhantomData<P>);
+pub struct TotalFarms<P: Population = ()>(pub usize, PhantomData<P>);
+
+//TODO: this part could be a derive macro..
+
+impl TotalFarms {
+    pub fn new_single_population(value: usize) -> Self {
+        Self(value, PhantomData)
+    }
+}
+
+impl<P: Population> AdjacentFarms<P> {
+    pub fn new_single_population(value: Vec<FarmId<P>>) -> Self {
+        Self(value, PhantomData)
+    }
+}
+
+impl<P: Population> HerdSize<P> {
+    pub fn new_single_population(value: usize) -> Self {
+        Self(value, PhantomData)
+    }
+}
+
+impl<P: Population> FarmId<P> {
+    pub fn new_single_population(value: usize) -> Self {
+        Self(value, PhantomData)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -90,5 +118,17 @@ mod tests {
         world.insert_resource(HerdSize::<()>::new(1000));
 
         dbg!(world.get_resource::<HerdSize>().unwrap());
+    }
+
+    #[test]
+    fn test_default_population() {
+        let mut world = World::new();
+        
+        let total_farms = TotalFarms::new_single_population(123);
+
+        world.insert_resource(total_farms);
+
+        dbg!(world.get_resource::<TotalFarms>().unwrap());
+
     }
 }

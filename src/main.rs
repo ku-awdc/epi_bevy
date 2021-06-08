@@ -111,8 +111,6 @@ enum Processes {
 }
 
 fn main() {
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
 
     //TODO: Add a CSV plugin
     // - [ ] Hide the CSV behind a mutex.

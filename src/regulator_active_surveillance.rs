@@ -52,6 +52,9 @@ pub struct ActiveSurveillance<'a> {
     remaining_proportion: Option<Res<'a, RemainingProportion>>,
 }
 
+//TODO: return which farms with the infection where detected
+// and their infected status
+
 pub fn update_active_surveillance(
     active_surveillance: ActiveSurveillance,
     mut query: Query<&mut Infected>,

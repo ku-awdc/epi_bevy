@@ -4,7 +4,6 @@
 use crate::populations::{AdjacentFarms, Cattle, FarmId, HerdSize};
 use crate::prelude::*;
 
-
 #[cfg(feature = "serialize")]
 pub fn deserialize_generated_farm_id<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
@@ -31,9 +30,7 @@ pub fn deserialize_generated_adjacent_farms<'de, D: serde::Deserializer<'de>>(
     let n: Vec<usize> = serde::Deserialize::deserialize(deserializer)?;
     // dbg!(&n);
     Ok(AdjacentFarms::new_single_population(
-        n.into_iter()
-            .map(FarmId::new_single_population)
-            .collect(),
+        n.into_iter().map(FarmId::new_single_population).collect(),
     ))
 }
 

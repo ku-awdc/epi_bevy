@@ -72,8 +72,7 @@ pub struct FarmBundle<P: Population = ()> {
 pub struct FarmId<P: Population = ()>(
     pub usize,
     // #[serde(default)]
-    #[serde(skip_deserializing, skip_serializing)]
-    PhantomData<P>,
+    #[serde(skip_deserializing, skip_serializing)] PhantomData<P>,
 );
 
 #[readonly::make]

@@ -61,11 +61,6 @@ pub fn record_cattle_farm_components(
     // info!("Recorded to csv at {} ", *scenario_time);
 
     query.for_each(|x| {
-        // dbg!(&x);
-        // let buffer = String::new();
-        // serde::
-        // buffer.serialize(&x);
-        // dbg!(buffer);
         csv_file
             .0
             .serialize((scenario_time.current_time(), x))

@@ -1,3 +1,5 @@
+use std::sync::Mutex;
+
 //
 // Here we investigate if systems can wholeheartedly take hold of [World] and
 // ammend entities with some properties, circumventing the command-framework.
@@ -16,6 +18,7 @@ fn main() {
         .map(|_| rng.gen_range(90..145))
         .map(|number| world.spawn().insert_bundle(((), number)).id())
         .collect_vec();
+    // world.insert_resource(Mutex::new(rng));
     world.insert_resource(rng);
     world.insert_resource(entities);
 
@@ -34,18 +37,14 @@ fn main() {
 }
 
 /// This has to be an `.exclusive_system` and these can only have `&mut World`
-/// as argument. But locally we can inquiry the world about these things. 
+/// as argument. But locally we can inquiry the world about these things.
 fn add_rate_to_everyone(world: &mut World) {
     let entities = world.get_resource::<Vec<Entity>>().cloned().unwrap();
-    let mut rng = world.get_resource_mut::<StdRng>().unwrap();
-    entities
-        .clone()
-        .into_iter()
-        .map(|_| (rng.gen_bool(0.2),))
-        .collect_vec()
-        .into_iter()
-        .zip_eq(entities.into_iter())
-        .for_each(|(components, entity)| {
-            world.entity_mut(entity).insert_bundle(components);
+
+    world.resource_scope(|world, mut rng: Mut<StdRng>| {
+        entities.into_iter().for_each(|entity| {
+            let random_flag = rng.gen_bool(0.2);
+            world.entity_mut(entity).insert(random_flag);
         });
+    });
 }

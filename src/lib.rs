@@ -75,4 +75,4 @@ pub mod regulator_passive_surveillance;
 pub mod repopulation_by_scaling;
 
 // deprecated
-pub mod deprecated_active_surveillance;
+// pub mod deprecated_active_surveillance;

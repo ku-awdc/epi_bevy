@@ -18,7 +18,7 @@ use crate::{
     farm_id_to_entity_map::FarmIdEntityMap,
     parameters::{Probability, Rate},
     populations::{AdjacentFarms, Cattle, FarmId, HerdSize},
-    scenario_time::ScenarioTime,
+    scenario_time::scenario_timer::ScenarioTime,
     sir_spread_model::{Infected, Susceptible},
 };
 
@@ -205,7 +205,7 @@ pub fn update_between_herd_spread_model(
 #[derive(Debug, Clone)]
 pub struct InfectionEvents {
     /// Scenario time for the infection events
-    pub scenario_tick: crate::scenario_time::Time,
+    pub scenario_tick: crate::scenario_time::scenario_timer::Time,
     /// Infection events are put out in batches
     /// and they can be grouped according to them.
     pub batch_id: usize,

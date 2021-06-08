@@ -1,18 +1,24 @@
 //!
+//! Separation between the [World] (agents, parameters, etc.) and the active
+//! processes (disease (spread) models, regulator, etc.) are facilitated through
+//! this.
+//!
+//! The simulation are all part of a [Stage] called [MainLoop], and the rest
+//! of the processes are delegated to the default stages in [bevy_ecs].
 //!
 //!
-
-use std::collections::HashMap;
-
-use bevy::ecs::schedule::ReportExecutionOrderAmbiguities;
-use rand::{prelude::StdRng, SeedableRng};
 
 use crate::{
     populations::{EmbeddedPopulation, Population},
     prelude::*,
-    scenario_time::ScenarioTime,
+    scenario_time::scenario_timer::ScenarioTime,
 };
+use bevy::ecs::schedule::ReportExecutionOrderAmbiguities;
+use rand::{prelude::StdRng, SeedableRng};
+use std::collections::HashMap;
 
+/// Build up a scenario; meaning include all the populations that need to be
+/// considered, and more.
 #[derive(derive_new::new)]
 struct ScenarioBuilder {
     /// Random number generator seed.
@@ -21,6 +27,8 @@ struct ScenarioBuilder {
 
     #[new(default)]
     world: Option<World>,
+
+    /// Saved entities of particular populations for later use.
     #[new(default)]
     entities: HashMap<EmbeddedPopulation, Vec<Entity>>,
 }
@@ -89,7 +97,7 @@ struct Scenario {
 /// The [SystemStage] that the scenario is simulated within. This dictates whether
 /// systems should be run in single_threaded or parallel mode as well.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, StageLabel)]
-struct MainLoop;
+pub struct MainLoop;
 
 #[derive(derive_new::new)]
 struct ScenarioStage {

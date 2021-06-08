@@ -10,7 +10,7 @@ use bevy::{
     log::LogPlugin,
 };
 use epi_bevy::prelude::*;
-use epi_bevy::scenario_time::ScenarioTime;
+use epi_bevy::scenario_time::scenario_timer::ScenarioTime;
 
 fn main() {
     App::build()
@@ -35,7 +35,7 @@ fn main() {
         .run();
 }
 
-fn update_scenario_tick(mut scenario_tick: ResMut<ScenarioTime>) {
+pub fn update_scenario_tick(mut scenario_tick: ResMut<ScenarioTime>) {
     scenario_tick.update_time(1);
 }
 

@@ -14,7 +14,7 @@ use crate::{
     parameters::{Probability, Rate},
     prelude::*,
     regulator_active_surveillance::DetectionRate,
-    scenario_time::ScenarioTime,
+    scenario_time::scenario_timer::ScenarioTime,
     sir_spread_model::Infected,
 };
 

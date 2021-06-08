@@ -43,7 +43,6 @@ pub mod scenario_builder;
 
 // ecs tools
 pub mod chain_tools;
-pub mod scenario_intervals;
 
 // math
 pub mod disease_parameters;

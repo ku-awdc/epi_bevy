@@ -1,11 +1,9 @@
-use std::sync::Mutex;
-
-//
-// Here we investigate if systems can wholeheartedly take hold of [World] and
-// ammend entities with some properties, circumventing the command-framework.
-//
-//
-//
+//!
+//! Here we investigate if systems can wholeheartedly take hold of [World] and
+//! amend entities with some properties, circumventing the command-framework.
+//!
+//!
+//!
 use epi_bevy::{populations::HerdSize, prelude::*};
 
 fn main() {

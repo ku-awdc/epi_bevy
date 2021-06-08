@@ -39,7 +39,7 @@ use epi_bevy::{
         update_active_surveillance, DetectionRate, RemainingProportion,
     },
     regulator_passive_surveillance::update_passive_surveillance,
-    scenario_intervals::run_every_month,
+    scenario_time::scenario_intervals::run_every_month,
     sir_spread_model,
 };
 use std::{collections::HashMap, convert::TryFrom};
@@ -51,7 +51,7 @@ use bevy::{
 };
 
 use epi_bevy::populations::FarmId;
-use epi_bevy::scenario_time::ScenarioTime;
+use epi_bevy::scenario_time::scenario_timer::ScenarioTime;
 use epi_bevy::sir_spread_model::{
     DiseaseCompartments, DiseaseParameters as WithinHerdDiseaseParameters,
 };
@@ -215,7 +215,7 @@ fn main() {
             .after(Processes::Disease)
             // record csv
             // .with_run_criteria(epi_bevy::scenario_intervals::run_yearly.system())
-            .with_run_criteria(epi_bevy::scenario_intervals::run_every_week.system())
+            .with_run_criteria(epi_bevy::scenario_time::scenario_intervals::run_every_week.system())
             .with_system(
                 epi_bevy::cattle_farm_recorder::record_cattle_farm_components.system(),
             )

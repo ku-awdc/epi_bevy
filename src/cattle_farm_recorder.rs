@@ -5,7 +5,7 @@ use std::fs::File;
 use crate::{
     // cattle_population::{CattleFarm, FarmId},
     populations::{Cattle, FarmId},
-    scenario_time::ScenarioTime,
+    scenario_time::scenario_timer::ScenarioTime,
     sir_spread_model::{Infected, Recovered, Susceptible},
 };
 

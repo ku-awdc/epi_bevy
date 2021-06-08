@@ -2,7 +2,7 @@ use bevy::app::AppExit;
 use epi_bevy::{
     populations::FarmId,
     prelude::*,
-    scenario_time::ScenarioTime,
+    scenario_time::scenario_timer::ScenarioTime,
     sir_spread_model::{self, Infected, Susceptible},
 };
 

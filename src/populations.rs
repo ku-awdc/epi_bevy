@@ -2,7 +2,7 @@
 //! Use `()` as the default [Population] if the multiple populations are not
 //! the target.
 //!
-use std::marker::PhantomData;
+use std::{hash::Hash, marker::PhantomData};
 
 use bevy::ecs::component::Component;
 
@@ -12,31 +12,53 @@ use bevy::ecs::component::Component;
 
 use crate::prelude::*;
 
-pub trait Population: Component {}
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub enum EmbeddedPopulation {
+    Default(()),
+    Cattle(Cattle),
+    Pig(Pig),
+    Sheep(Sheep),
+}
+
+// this currently doesn't work. Nor does the `either` crate help with this.
+
+// impl EmbeddedPopulation {
+//     pub fn inner(self) -> Box<dyn Population> {
+//         match self {
+//             EmbeddedPopulation::Default(a) => a,
+//             EmbeddedPopulation::Cattle(a) => a,
+//             EmbeddedPopulation::Pig(a) => a,
+//             EmbeddedPopulation::Sheep(a) => a,
+//         }
+//     }
+// }
+
+pub trait Population: Component + Hash + Eq + PartialEq {}
 
 impl Population for () {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Cattle;
 
 impl Population for Cattle {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Pig;
 
 impl Population for Pig {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Sheep;
 
 impl Population for Sheep {}
 
 // #[readonly::make]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Bundle)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Bundle)]
 pub struct FarmBundle<P: Population = ()> {
     population: P,
     pub farm_id: FarmId<P>,
@@ -47,22 +69,27 @@ pub struct FarmBundle<P: Population = ()> {
 // #[readonly::make]
 #[derive(Debug, Copy, Clone, PartialEq, Hash, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct FarmId<P: Population = ()>(pub usize, PhantomData<P>);
+pub struct FarmId<P: Population = ()>(
+    pub usize,
+    // #[serde(default)]
+    #[serde(skip_deserializing, skip_serializing)]
+    PhantomData<P>,
+);
 
 #[readonly::make]
-#[derive(Debug, Clone, Copy, derive_new::new)]
+#[derive(Debug, Clone, Copy, derive_new::new, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct HerdSize<P: Population = ()>(pub usize, PhantomData<P>);
+pub struct HerdSize<P: Population = ()>(pub usize, #[serde(skip_deserializing)] PhantomData<P>);
 
 #[readonly::make]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct AdjacentFarms<P: Population = ()>(pub Vec<FarmId<P>>, PhantomData<P>);
 
 /// Intended to be stored as a global available resource
 /// for each added population to the [crate::scenario_builder::Scenario].
 #[readonly::make]
-#[derive(Debug, Clone, Copy, derive_new::new)]
+#[derive(Debug, Clone, Copy, derive_new::new, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct TotalFarms<P: Population = ()>(pub usize, PhantomData<P>);
 
@@ -80,7 +107,7 @@ impl<P: Population> AdjacentFarms<P> {
     }
 }
 
-impl<P: Population> HerdSize<P> {
+impl HerdSize {
     pub fn new_single_population(value: usize) -> Self {
         Self(value, PhantomData)
     }
@@ -123,12 +150,11 @@ mod tests {
     #[test]
     fn test_default_population() {
         let mut world = World::new();
-        
+
         let total_farms = TotalFarms::new_single_population(123);
 
         world.insert_resource(total_farms);
 
         dbg!(world.get_resource::<TotalFarms>().unwrap());
-
     }
 }

@@ -1,6 +1,6 @@
 use bevy::app::AppExit;
 use epi_bevy::{
-    cattle_population::FarmId,
+    populations::FarmId,
     prelude::*,
     scenario_time::ScenarioTime,
     sir_spread_model::{self, Infected, Susceptible},
@@ -41,7 +41,7 @@ fn log_every_half_second(
 ) {
     for (farm_id, susceptible, infected, recovered) in query.iter() {
         info!(
-            "{} => {}: {:>9.3}, {:>9.3}, {:>9.3}",
+            "{} => {:?}: {:>9.3}, {:>9.3}, {:>9.3}",
             scenario_tick.current_time(),
             farm_id,
             susceptible.0,

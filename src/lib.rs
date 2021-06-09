@@ -16,7 +16,15 @@
 //! but then I foresee using the [std::marker::PhantomData].
 //
 //
-
+#![warn(missing_debug_implementations)]
+#![warn(rust_2018_idioms)]
+#![warn(missing_docs)]
+#![warn(unused_crate_dependencies)]
+#![allow(dead_code)]
+// #![warn(clippy::all)]
+// #![warn(clippy::pedantic)]
+// #![warn(clippy::nursery)]
+#![warn(clippy::cargo)]
 pub mod prelude {
     //! Major packages used in this simulation has `prelude`-modules and these
     //! are all conjoined here.

@@ -13,7 +13,7 @@ use crate::{
     prelude::*,
     scenario_time::scenario_timer::ScenarioTime,
 };
-use bevy::ecs::schedule::ReportExecutionOrderAmbiguities;
+use bevy::ecs::{component::Component, schedule::ReportExecutionOrderAmbiguities};
 use rand::{prelude::StdRng, SeedableRng};
 use std::collections::HashMap;
 
@@ -108,7 +108,7 @@ impl ScenarioStage {
     #[must_use]
     pub fn add_process<Process, P: Population>(
         &mut self,
-        initial_state: impl bevy::ecs::component::Component,
+        initial_state: impl Component,
         update_routine: Process,
     ) -> &mut Self {
         // let entities_to_supplement  = self.world.query::<P>().iter_mut(&mut self.world);

@@ -50,7 +50,7 @@ pub fn print_total_infected_farms(
             .total_infected_farms
             .insert(scenario_tick.current_time(), total_infected_farms);
         info!(
-            "{:>5} => Total infected farms: {}",
+            "\n{:>5} => Total infected farms: {}",
             scenario_tick.current_time(),
             total_infected_farms
         );

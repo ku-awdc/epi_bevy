@@ -6,8 +6,9 @@
 
 use crate::prelude::*;
 use crate::{
-    cattle_population::CattleFarm,
     parameters::Rate,
+    // cattle_population::CattleFarm,
+    populations::Cattle,
     sir_spread_model::{Infected, Susceptible},
 };
 
@@ -19,7 +20,7 @@ pub struct ExogenousInfectionRate(pub Rate);
 pub fn setup_exogenous_infection_rate(
     mut commands: Commands,
     initial_exogenous_infection_rate: Option<ExogenousInfectionRate>,
-    query: Query<Entity, With<CattleFarm>>,
+    query: Query<Entity, With<Cattle>>,
 ) {
     let initial_exogenous_infection_rate =
         initial_exogenous_infection_rate.expect("initial value as a resource is not present.");

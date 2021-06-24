@@ -1,10 +1,16 @@
+//
+// This example was made because there was an issue where the simulation wasn't
+// running at all, and this was to see if the simple scenario with a
+// ticker would run.
+//
+//
 use bevy::{
     app::{AppExit, ScheduleRunnerPlugin},
     diagnostic::{DiagnosticsPlugin, LogDiagnosticsPlugin},
     log::LogPlugin,
 };
 use epi_bevy::prelude::*;
-use epi_bevy::scenario_time::ScenarioTime;
+use epi_bevy::scenario_time::scenario_timer::ScenarioTime;
 
 fn main() {
     App::build()
@@ -29,7 +35,7 @@ fn main() {
         .run();
 }
 
-fn update_scenario_tick(mut scenario_tick: ResMut<ScenarioTime>) {
+pub fn update_scenario_tick(mut scenario_tick: ResMut<ScenarioTime>) {
     scenario_tick.update_time(1);
 }
 

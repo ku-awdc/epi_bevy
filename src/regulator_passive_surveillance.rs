@@ -14,7 +14,7 @@ use crate::{
     parameters::{Probability, Rate},
     prelude::*,
     regulator_active_surveillance::DetectionRate,
-    scenario_time::ScenarioTime,
+    scenario_time::scenario_timer::ScenarioTime,
     sir_spread_model::Infected,
 };
 
@@ -60,7 +60,7 @@ pub fn update_passive_surveillance(
     let true_prevalence = query.iter().filter(|x| x.0 > 0).count() as f64 / total_farms as f64;
 
     info!(
-        "{:>5} => True prevalence: {:.4}\tObserved_prevalence: {:.4}",
+        "\n{:>5} => True prevalence: {:.4}\tObserved_prevalence: {:.4}",
         scenario_time.current_time(),
         true_prevalence,
         observed_prevalence,

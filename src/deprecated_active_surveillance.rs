@@ -15,8 +15,8 @@
 use std::convert::TryFrom;
 
 use crate::{
-    cattle_population::CattleFarm,
     parameters::{Probability, Rate},
+    populations::Cattle,
     prelude::*,
     sir_spread_model::{Infected, Susceptible},
 };
@@ -46,7 +46,7 @@ pub fn setup_passive_surveillance(
     mut commands: Commands,
     initial_detection_rate_pr_farm: Option<Res<DetectionRatePerFarm>>,
     initial_detection_rate_pr_animal: Option<Res<DetectionRatePerAnimal>>,
-    query: Query<(Entity, &CattleFarm)>,
+    query: Query<(Entity, &Cattle)>,
 ) {
     let initial_detection_rate_pr_farm: DetectionRatePerFarm = initial_detection_rate_pr_farm
         .expect("Missing initial `DetectionRatePerFarm` as a resource.")

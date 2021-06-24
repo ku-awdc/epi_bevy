@@ -14,7 +14,7 @@
 
 use crate::prelude::*;
 use crate::{
-    cattle_population::HerdSize,
+    populations::HerdSize,
     sir_spread_model::{Infected, Recovered, Susceptible},
 };
 

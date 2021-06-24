@@ -4,7 +4,7 @@
 //!
 //! This would be used with whatever
 
-use crate::cattle_population::FarmId;
+use crate::populations::FarmId;
 use crate::prelude::*;
 use std::collections::HashMap;
 

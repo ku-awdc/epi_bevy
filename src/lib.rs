@@ -16,21 +16,24 @@
 //! but then I foresee using the [std::marker::PhantomData].
 //
 //
+#![warn(missing_debug_implementations)]
+#![warn(rust_2018_idioms)]
+#![warn(missing_docs)]
+#![warn(unused_crate_dependencies)]
+#![allow(dead_code)]
+// #![warn(clippy::all)]
+// #![warn(clippy::pedantic)]
+// #![warn(clippy::nursery)]
+#![warn(clippy::cargo)]
 
-pub mod prelude {
-    //! Major packages used in this simulation has `prelude`-modules and these
-    //! are all conjoined here.
-    //!
-    //!
-    pub use bevy::prelude::*;
-    pub use itertools::Itertools;
+pub mod prelude;
 
-    //TODO: add [bevy::ecs::system::SystemParam] as I believe this should
-    // be included in the prelude, but it isn't.
-}
+// scenario builder
+pub mod populations;
+pub mod scenario_builder;
 
 // ecs tools
-pub mod scenario_intervals;
+pub mod chain_tools;
 
 // math
 pub mod disease_parameters;
@@ -63,4 +66,4 @@ pub mod regulator_passive_surveillance;
 pub mod repopulation_by_scaling;
 
 // deprecated
-pub mod deprecated_active_surveillance;
+// pub mod deprecated_active_surveillance;

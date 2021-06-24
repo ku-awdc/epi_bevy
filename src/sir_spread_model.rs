@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use bevy::prelude::*;
 use rand::prelude::*;
 
-use crate::cattle_population::HerdSize;
+use crate::populations::HerdSize;
 
 #[readonly::make]
 #[derive(Debug, Clone, Copy)]

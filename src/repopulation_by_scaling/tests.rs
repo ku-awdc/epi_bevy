@@ -6,7 +6,7 @@ fn testing_the_scaling() {
     let some_entity = miniworld
         .spawn()
         .insert_bundle((
-            HerdSize::new(100),
+            HerdSize::new_single_population(100),
             Susceptible(22),
             Infected(2),
             Recovered(14),

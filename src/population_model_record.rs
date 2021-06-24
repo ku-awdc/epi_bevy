@@ -11,14 +11,14 @@ use std::collections::BTreeMap;
 use bevy::prelude::*;
 use bevy::{ecs::system::SystemParam, utils::HashSet};
 
-use crate::{scenario_time::ScenarioTime, sir_spread_model::Infected};
+use crate::{scenario_time::scenario_timer::ScenarioTime, sir_spread_model::Infected};
 
 //TODO: Add `Debug` after it is added to `Bevy`.
 
 #[derive(SystemParam)]
 pub struct Recorder<'a> {
     previously_active_infections: Local<'a, HashSet<Entity>>,
-    total_infected_farms: Local<'a, BTreeMap<crate::scenario_time::Time, usize>>,
+    total_infected_farms: Local<'a, BTreeMap<crate::scenario_time::scenario_timer::Time, usize>>,
 }
 pub fn print_total_infected_farms(
     mut recorder: Recorder,
@@ -50,7 +50,7 @@ pub fn print_total_infected_farms(
             .total_infected_farms
             .insert(scenario_tick.current_time(), total_infected_farms);
         info!(
-            "{:>5} => Total infected farms: {}",
+            "\n{:>5} => Total infected farms: {}",
             scenario_tick.current_time(),
             total_infected_farms
         );

@@ -3,8 +3,9 @@ use csv::Writer;
 use std::fs::File;
 
 use crate::{
-    cattle_population::{CattleFarm, FarmId},
-    scenario_time::ScenarioTime,
+    // cattle_population::{CattleFarm, FarmId},
+    populations::{Cattle, FarmId},
+    scenario_time::scenario_timer::ScenarioTime,
     sir_spread_model::{Infected, Recovered, Susceptible},
 };
 
@@ -55,7 +56,7 @@ pub fn record_cattle_farm_components(
     // commands: Commands,
     mut csv_file: ResMut<CattleFarmsCSVRecorder>,
     scenario_time: Res<ScenarioTime>,
-    query: Query<(&FarmId, &Susceptible, &Infected, &Recovered), With<CattleFarm>>,
+    query: Query<(&FarmId, &Susceptible, &Infected, &Recovered), With<Cattle>>,
 ) {
     // info!("Recorded to csv at {} ", *scenario_time);
 

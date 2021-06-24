@@ -1,48 +1,59 @@
 //!
 //!
 //!
-use bevy::prelude::*;
+use crate::populations::{AdjacentFarms, Cattle, FarmId, HerdSize};
+use crate::prelude::*;
 
 #[cfg(feature = "serialize")]
-use serde::{Deserialize, Serialize};
+pub fn deserialize_generated_farm_id<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<FarmId, D::Error> {
+    // let n: usize = usize::deserialize(deserializer)?;
+    let n: usize = serde::Deserialize::deserialize(deserializer)?;
+    Ok(FarmId::new_single_population(n))
+}
 
-use itertools::Itertools;
+#[cfg(feature = "serialize")]
+pub fn deserialize_generated_herd_size<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<HerdSize, D::Error> {
+    // let n: usize = usize::deserialize(deserializer)?;
+    let n: usize = serde::Deserialize::deserialize(deserializer)?;
+    Ok(HerdSize::new_single_population(n))
+}
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct CattleFarm;
-
-#[readonly::make]
-#[derive(Debug, Copy, Clone, PartialEq, derive_more::Display, Hash, Eq)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct FarmId(pub usize);
+#[cfg(feature = "serialize")]
+pub fn deserialize_generated_adjacent_farms<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<AdjacentFarms, D::Error> {
+    // let n: usize = usize::deserialize(deserializer)?;
+    let n: Vec<usize> = serde::Deserialize::deserialize(deserializer)?;
+    // dbg!(&n);
+    Ok(AdjacentFarms::new_single_population(
+        n.into_iter().map(FarmId::new_single_population).collect(),
+    ))
+}
 
 #[readonly::make]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, Bundle)]
 pub struct CattleFarmBundle {
-    cattle_farm: CattleFarm,
+    cattle_farm: Cattle,
+    #[serde(deserialize_with = "deserialize_generated_farm_id")]
     pub farm_id: FarmId,
+    #[serde(deserialize_with = "deserialize_generated_herd_size")]
     pub herd_size: HerdSize,
     adjacent_farms: AdjacentFarms,
 }
-
-#[readonly::make]
-#[derive(Debug, Clone, Copy, derive_new::new)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct HerdSize(pub usize);
-
-#[readonly::make]
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct AdjacentFarms(pub Vec<FarmId>);
 
 #[cfg(feature = "serialize")]
 pub fn load_ring_population() -> impl Iterator<Item = CattleFarmBundle> + Clone {
     #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
     #[derive(Debug, Clone)]
     struct PopulationRecord {
+        #[serde(deserialize_with = "deserialize_generated_farm_id")]
         farm_id: FarmId,
+        #[serde(deserialize_with = "deserialize_generated_herd_size")]
         herd_size: HerdSize,
     }
     let population_info_file = std::fs::File::open("assets/population_info.json").unwrap();
@@ -57,8 +68,10 @@ pub fn load_ring_population() -> impl Iterator<Item = CattleFarmBundle> + Clone 
     #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
     #[derive(Debug, Clone)]
     struct AdjacencyRecord {
+        #[serde(deserialize_with = "deserialize_generated_farm_id")]
         farm_id: FarmId,
         #[serde(rename(deserialize = "adjacent"))]
+        #[serde(deserialize_with = "deserialize_generated_adjacent_farms")]
         adjacent_farms: AdjacentFarms,
     }
 
@@ -84,7 +97,7 @@ pub fn load_ring_population() -> impl Iterator<Item = CattleFarmBundle> + Clone 
         );
 
         CattleFarmBundle {
-            cattle_farm: CattleFarm,
+            cattle_farm: Cattle,
             farm_id,
             herd_size,
             adjacent_farms,

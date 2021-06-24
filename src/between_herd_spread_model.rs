@@ -15,10 +15,10 @@ use itertools::Itertools;
 use rand::prelude::*;
 
 use crate::{
-    cattle_population::{AdjacentFarms, CattleFarm, FarmId, HerdSize},
     farm_id_to_entity_map::FarmIdEntityMap,
     parameters::{Probability, Rate},
-    scenario_time::ScenarioTime,
+    populations::{AdjacentFarms, Cattle, FarmId, HerdSize},
+    scenario_time::scenario_timer::ScenarioTime,
     sir_spread_model::{Infected, Susceptible},
 };
 
@@ -35,7 +35,7 @@ pub struct ContactRate(pub Rate);
 pub fn setup_between_herd_spread_model(
     mut commands: Commands,
     initial_contact_rate: Option<Res<ContactRate>>,
-    query: Query<(Entity, &CattleFarm)>,
+    query: Query<(Entity, &Cattle)>,
 ) {
     let initial_contact_rate: ContactRate = initial_contact_rate
         .expect("Missing initial `ContactRate` as a resource.")
@@ -205,7 +205,7 @@ pub fn update_between_herd_spread_model(
 #[derive(Debug, Clone)]
 pub struct InfectionEvents {
     /// Scenario time for the infection events
-    pub scenario_tick: crate::scenario_time::Time,
+    pub scenario_tick: crate::scenario_time::scenario_timer::Time,
     /// Infection events are put out in batches
     /// and they can be grouped according to them.
     pub batch_id: usize,
@@ -229,7 +229,7 @@ pub fn print_between_herd_infection_events(
         info!("Time: {}", scenario_tick);
         // info!("{:#?}", events);
         for (origin, target, _) in events_values {
-            info!("{} -> {}", origin, target)
+            info!("{:?} -> {:?}", origin, target)
         }
         events
     } else {

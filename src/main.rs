@@ -39,7 +39,7 @@ use epi_bevy::{
         update_active_surveillance, DetectionRate, RemainingProportion,
     },
     regulator_passive_surveillance::update_passive_surveillance,
-    scenario_intervals::run_every_month,
+    scenario_time::scenario_intervals::run_every_month,
     sir_spread_model,
 };
 use std::{collections::HashMap, convert::TryFrom};
@@ -50,8 +50,8 @@ use bevy::{
     log::LogPlugin,
 };
 
-use epi_bevy::cattle_population::FarmId;
-use epi_bevy::scenario_time::ScenarioTime;
+use epi_bevy::populations::FarmId;
+use epi_bevy::scenario_time::scenario_timer::ScenarioTime;
 use epi_bevy::sir_spread_model::{
     DiseaseCompartments, DiseaseParameters as WithinHerdDiseaseParameters,
 };
@@ -100,6 +100,9 @@ enum Seed {
     Contacts,
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone, StageLabel)]
+struct MainLoop;
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone, SystemLabel)]
 enum Processes {
     Disease,
@@ -108,8 +111,6 @@ enum Processes {
 }
 
 fn main() {
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
 
     //TODO: Add a CSV plugin
     // - [ ] Hide the CSV behind a mutex.
@@ -118,114 +119,110 @@ fn main() {
     // - [ ] Save every other scenario / physical time.
     // - [ ] Save also in other modules (e.g. between-herd spread & a regulators).
 
-    /// Used to fuse the chained systems, such that one doesn't get a compilation
-    /// error even though the result of the last system isn't used.
-    ///
-    /// As [SystemStage] requires that the system-chain ends with unit-type `()`
-    /// we have to use this to fuse the chain.
-    ///
-    /// Author: @TheRuwuMeatball
-    pub fn dispose<T>(_: In<T>) {}
-
     App::build()
-        .insert_resource(bevy::log::LogSettings {
-            level: bevy::log::Level::DEBUG,
-            ..Default::default()
-        })
-        .insert_resource(bevy::ecs::schedule::ReportExecutionOrderAmbiguities)
-        .add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(DiagnosticsPlugin::default())
-        .add_plugin(ScheduleRunnerPlugin::default())
-        .add_plugin(LogPlugin::default())
-        .add_plugins(MinimalPlugins)
 
+    .insert_resource(bevy::log::LogSettings {
+        level: bevy::log::Level::DEBUG,
+        ..Default::default()
+    })
+    .insert_resource(bevy::ecs::schedule::ReportExecutionOrderAmbiguities)
+    .add_plugin(LogDiagnosticsPlugin::default())
+    .add_plugin(DiagnosticsPlugin::default())
+    .add_plugin(ScheduleRunnerPlugin::default())
+    .add_plugin(LogPlugin::default())
+    .add_plugins(MinimalPlugins)
+    // TODO: Things that follow here
 
-        // TODO: Things that follow here 
-
-        .insert_resource(StdRng::seed_from_u64(20210426))
-        // .insert_resource(ScenarioTick(0))
-        .insert_resource(ScenarioTime::new(1, None))
-        .insert_resource(ScenarioConfiguration {
-            // max_timesteps: usize::MAX(),
-            // FIXME: make these part of the [ScenarioTime] resource
-            min_timesteps: 3,
-            max_timesteps: 10_000,
-            //FIXME: this is currently unused
-            max_repetitions: 2,
-        })
-        .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
-        // .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
-        //TODO: this block adds parameters, but what I'd ideally want is for the SceneConfiguration to add
-        // them. So is there such a thing as a Bundle of Resources?
-        // .insert_resource(WithinHerdDiseaseParameters::new(0.003, 0.00001))
-        // .insert_resource(between_herd_spread_model::ContactRate::new(0.095))
-        .insert_resource(between_herd_spread_model::ContactRate::new(Rate::new(10.).unwrap()))
+    .insert_resource(StdRng::seed_from_u64(20210426))
+    .insert_resource(ScenarioTime::new(1, None))
+    .insert_resource(ScenarioConfiguration {
+        // max_timesteps: usize::MAX(),
+        max_timesteps: 10_000,
+        min_timesteps: 3,
+        //FIXME: this is currently unused
+        max_repetitions: 2,
+    })
+    .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
+    // .insert_resource(WithinHerdDiseaseParameters::new(0.0013, 0.008333))
+    //TODO: this block adds parameters, but what I'd ideally want is for the SceneConfiguration to add
+    // them. So is there such a thing as a Bundle of Resources?
+    // .insert_resource(WithinHerdDiseaseParameters::new(0.003, 0.00001))
+    // .insert_resource(between_herd_spread_model::ContactRate::new(0.095))
+    .insert_resource(between_herd_spread_model::ContactRate::new(Rate::new(0.095).unwrap()))
     .insert_resource(DetectionRate::new(
-        Rate::try_from(Probability::new(0.00031).unwrap()).unwrap(),
+        Rate::try_from(Probability::new(0.000031).unwrap()).unwrap(),
     ))
     .insert_resource(RemainingProportion::new(Probability::new(0.10).unwrap()))
-        // .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.5).unwrap()).unwrap()))
-        // .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.01).unwrap()).unwrap()))
-        // .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.0).unwrap()).unwrap()))
-        // .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.00).unwrap()).unwrap()))
-        // .insert_resource(ContactRate::new(0.0))
-        //TODO: Every time a new module is added to the mix, it needs a new setup
-        // procedure to amend the farms with components pertaining to those new systems
-        // they can be regulators, and at least any other thing that should be
-        // extended somehow...
-        .add_startup_system(epi_bevy::cattle_farm_recorder::setup_cattle_farm_recorder.system())
-        .add_startup_system(epi_bevy::between_herd_spread_model_record::setup_between_herd_infection_events_recording.system())
-        //TODO: this stage doesn't need to be parallel.. but it is?
-        .add_startup_stage(Seed::Population, SystemStage::parallel())
-        .add_startup_stage_after(Seed::Population, Seed::Infection, SystemStage::parallel())
-        .add_startup_system_to_stage(Seed::Population, seed_cattle_population.system())
-        .add_startup_system_to_stage(
-            Seed::Infection,
-            epi_bevy::sir_spread_model::seed_infection_random.system(),
-        )
-        .add_startup_stage_after(Seed::Infection, Seed::Contacts, SystemStage::parallel())
-        .add_startup_system_to_stage(
-            Seed::Contacts,
-            between_herd_spread_model::setup_between_herd_spread_model.system(),
-        )
-        // .add_startup_system_to_stage(Seed::Contacts, epi_bevy::deprecated_active_surveillance::setup_passive_surveillance.system())
+    // .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.5).unwrap()).unwrap()))
+    // .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.01).unwrap()).unwrap()))
+    // .insert_resource(DetectionRatePerAnimal(Rate::try_from(Probability::new(0.0).unwrap()).unwrap()))
+    // .insert_resource(DetectionRatePerFarm(Rate::try_from(Probability::new(0.00).unwrap()).unwrap()))
+    // .insert_resource(ContactRate::new(0.0))
+    //TODO: Every time a new module is added to the mix, it needs a new setup
+    // procedure to amend the farms with components pertaining to those new systems
+    // they can be regulators, and at least any other thing that should be
+    // extended somehow...
+    .add_startup_system(epi_bevy::cattle_farm_recorder::setup_cattle_farm_recorder.system())
+    .add_startup_system(epi_bevy::between_herd_spread_model_record::setup_between_herd_infection_events_recording.system())
+    //TODO: this stage doesn't need to be parallel.. but it is?
+    // .add_startup_stage(Seed::Population, SystemStage::parallel())
+    .add_startup_stage(Seed::Population, SystemStage::single_threaded())
+    .add_startup_stage_after(Seed::Population, Seed::Infection, SystemStage::single_threaded())
+    .add_startup_system_to_stage(Seed::Population, seed_cattle_population.system())
+    .add_startup_system_to_stage(
+        Seed::Infection,
+        epi_bevy::sir_spread_model::seed_infection_random.system(),
+    )
+    .add_startup_stage_after(Seed::Infection, Seed::Contacts, SystemStage::single_threaded())
+    .add_startup_system_to_stage(
+        Seed::Contacts,
+        between_herd_spread_model::setup_between_herd_spread_model.system(),
+    )
+    // .add_startup_system_to_stage(Seed::Contacts, epi_bevy::deprecated_active_surveillance::setup_passive_surveillance.system())
 
-        // Main-loop 
+    // Main-loop
+    // .add_stage(MainLoop, SystemStage::single_threaded())
+    .add_stage(MainLoop, SystemStage::parallel())
 
-        .add_system(update_scenario_tick.system().before(Processes::Disease))
-        .add_system_set(
-            SystemSet::new()
+    .add_system_set_to_stage(MainLoop,
+        SystemSet::new()
+        .with_system(update_scenario_tick.system().before(Processes::Disease)))
+
+
+        .add_system_set_to_stage(MainLoop,
+            // .add_system_set(
+                SystemSet::new()
                 .label(Processes::Disease)
-                .with_system(epi_bevy::sir_spread_model::update_disease_compartments.system())
-                .with_system(
-                    between_herd_spread_model::update_between_herd_spread_model
-                        .system()
-                        // .chain(print_between_herd_infection_events.system())
-                        .chain(epi_bevy::between_herd_spread_model_record::record_between_herd_infection_events.system()),
-                ),
-        )
-        .add_system_set(
-            SystemSet::new()
-                .label(Processes::Recording)
-                .after(Processes::Disease)
-                // record csv
-                // .with_run_criteria(epi_bevy::scenario_intervals::run_yearly.system())
-                .with_run_criteria(epi_bevy::scenario_intervals::run_every_week.system())
-                .with_system(
-                    epi_bevy::cattle_farm_recorder::record_cattle_farm_components.system(),
-                )
-                // print prevalence
-                .with_system(
-                    epi_bevy::population_model_record::print_total_infected_farms
-                        .system(),
-                ),
-        )
-        //TODO: Add a regulators system set! (and finish it)
-        .add_system_set(SystemSet::new()
-            // .with_system(epi_bevy::active_surveillance::active_surveillance.system())
+                .with_system(epi_bevy::sir_spread_model::update_disease_compartments.system().chain(
+                // .with_system(
+                    between_herd_spread_model::update_between_herd_spread_model.system()
+                    .chain(epi_bevy::between_herd_spread_model_record::record_between_herd_infection_events.system())
+                ))
+            )
+            //TODO: Add a regulators system set! (and finish it)
+            .add_system_set_to_stage(MainLoop,SystemSet::new()
+            .label(Processes::Regulators)
+            .after(Processes::Disease)
             .with_system(update_active_surveillance.system())
-            .with_system(update_passive_surveillance.system().with_run_criteria(run_every_month.system()))
-            .label(Processes::Regulators))
+            .with_system(update_passive_surveillance.system()
+            .with_run_criteria(run_every_month.system()))
+        )
+        .add_system_set_to_stage(MainLoop,
+            SystemSet::new()
+            .label(Processes::Recording)
+            .after(Processes::Disease)
+            // record csv
+            // .with_run_criteria(epi_bevy::scenario_intervals::run_yearly.system())
+            .with_run_criteria(epi_bevy::scenario_time::scenario_intervals::run_every_week.system())
+            .with_system(
+                epi_bevy::cattle_farm_recorder::record_cattle_farm_components.system(),
+            )
+            // print prevalence
+            .with_system(
+                epi_bevy::population_model_record::print_total_infected_farms
+                .system(),
+            )
+        )
 
         // .add_system_to_stage(CoreStage::Update, examine_population.system())
         // TODO: add recorder
@@ -236,13 +233,15 @@ fn main() {
         // .add_system(log_changes_in_infected.system())
         // print the state of the systems every 1000ms.
         // .add_system(
-        //     log_every_half_second
-        //         .system()
-        //         .with_run_criteria(FixedTimestep::step(0.700)),
-        // )
-        // TODO: add application loop that displays the current estimates
-        // .add_system(print_population_disease_states.system())
-        .add_system(terminate_if_outbreak_is_over.system().after(Processes::Regulators))
+            //     log_every_half_second
+            //         .system()
+            //         .with_run_criteria(FixedTimestep::step(0.700)),
+            // )
+            // TODO: add application loop that displays the current estimates
+            // .add_system(print_population_disease_states.system())
+            .add_system_set_to_stage(MainLoop,
+            SystemSet::new().with_system(terminate_if_outbreak_is_over.system().after(Processes::Regulators))
+        )
         .run();
 
     info!("Finished simulation.");
@@ -299,8 +298,8 @@ fn terminate_if_outbreak_is_over(
         & (
             //stop if there are no more active infections
             (!any_active_infection) ||
-    // stop if max timesteps have been reached
-    scenario_configuration.max_timesteps == tick.current_time()
+            // stop if max timesteps have been reached
+            scenario_configuration.max_timesteps == tick.current_time()
         )
     // || tick.ended()
     //TODO: Add the case where `tick.ended()` alone as to specifically

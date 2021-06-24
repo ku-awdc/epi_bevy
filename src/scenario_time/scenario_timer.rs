@@ -6,6 +6,8 @@
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 
+//TODO: write why `Time` is a `u64` and not a `usize`?
+
 /// Scenario time ticks in days
 pub type Time = u64;
 
